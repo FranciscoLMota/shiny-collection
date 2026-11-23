@@ -1,0 +1,152 @@
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model PokemonSpecies {
+  id                 Int        @id @default(autoincrement())
+  nationalDexNumber  Int        @unique
+  name               String
+  generation         Int
+
+  genus              String?
+  description        String?    @db.Text
+  color              String?
+  habitat            String?
+
+  isBaby             Boolean    @default(false)
+  isLegendary        Boolean    @default(false)
+  isMythical         Boolean    @default(false)
+
+  evolutionChainId   Int?
+
+  entries            DexEntry[]
+
+  @@index([name])
+  @@index([generation])
+}
+
+
+model DexEntry {
+  id                 Int            @id @default(autoincrement())
+  speciesId          Int
+
+  // Form information
+  pokeApiPokemonId   Int?           @unique
+  formKey            String         @default("standard")
+  displayName        String
+  region             String?
+  isRequired         Boolean        @default(true)
+
+  // Typing
+  primaryType        String
+  secondaryType      String?
+
+  // Abilities
+  abilities          String[]       @default([])
+  hiddenAbility      String?
+
+  // Physical characteristics
+  height             Int?
+  weight             Int?
+
+  // Base stats
+  hp                 Int?
+  attack             Int?
+  defense            Int?
+  specialAttack      Int?
+  specialDefense     Int?
+  speed              Int?
+
+  // Images
+  spriteDefault      String?
+  spriteShiny        String?
+  artworkDefault     String?
+  artworkShiny       String?
+
+  // Relationships
+  species            PokemonSpecies @relation(fields: [speciesId], references: [id])
+  ownedPokemon       OwnedPokemon[]
+  hunts              Hunt[]
+  huntPhases         HuntPhase[]
+
+  @@unique([speciesId, formKey])
+  @@index([speciesId])
+  @@index([displayName])
+  @@index([primaryType])
+  @@index([secondaryType])
+  @@index([region])
+}
+
+model OwnedPokemon {
+  id                 Int       @id @default(autoincrement())
+  dexEntryId         Int
+
+  nickname           String?
+  gameOrigin         String?
+  obtainedAt         DateTime?
+  isInHome           Boolean   @default(false)
+  notes              String?
+  huntPhase          HuntPhase?
+
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  dexEntry           DexEntry  @relation(fields: [dexEntryId], references: [id])
+
+  @@index([dexEntryId])
+}
+
+model Hunt {
+  id                 Int        @id @default(autoincrement())
+  dexEntryId         Int
+
+  game               String?
+  method             String?
+  status             HuntStatus @default(PLANNED)
+  encounters         Int        @default(0)
+
+  startedAt          DateTime?
+  completedAt        DateTime?
+  notes              String?
+  phases             HuntPhase[]
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  dexEntry           DexEntry   @relation(fields: [dexEntryId], references: [id])
+
+  @@index([dexEntryId])
+}
+
+enum HuntStatus {
+  PLANNED
+  ACTIVE
+  COMPLETED
+  PAUSED
+}
+
+
+model HuntPhase {
+  id                 Int       @id @default(autoincrement())
+  huntId             Int
+  dexEntryId         Int
+  phaseNumber        Int
+  encounters         Int
+  totalEncounters    Int
+  foundAt            DateTime  @default(now())
+  notes              String?
+  ownedPokemonId     Int?      @unique
+
+  hunt               Hunt      @relation(fields: [huntId], references: [id], onDelete: Cascade)
+  dexEntry           DexEntry  @relation(fields: [dexEntryId], references: [id])
+  ownedPokemon       OwnedPokemon? @relation(fields: [ownedPokemonId], references: [id], onDelete: SetNull)
+
+  @@unique([huntId, phaseNumber])
+  @@index([dexEntryId])
+}
+

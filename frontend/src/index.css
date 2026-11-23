@@ -1,0 +1,112 @@
+@import "tailwindcss";
+
+@theme {
+  --color-obsidian: #0f0f0f;
+  --color-surface: #191919;
+  --color-surface-hover: #242424;
+  --color-border: #303030;
+
+  --color-gold: #c5a46d;
+  --color-gold-muted: #947b52;
+
+  --color-success: #69a884;
+  --color-muted: #999999;
+
+  --font-display: "Urbanist", sans-serif;
+  --font-sans: "Inter", sans-serif;
+}
+
+@layer base {
+  body {
+    @apply m-0 bg-obsidian font-sans text-white antialiased;
+  }
+
+  button {
+    cursor: pointer;
+  }
+}
+
+
+/* 3D Pokémon card */
+.pokemon-tilt-card {
+  transform:
+    rotateX(var(--rotate-x, 0deg))
+    rotateY(var(--rotate-y, 0deg));
+
+  transform-style: preserve-3d;
+  will-change: transform;
+
+  transition:
+    transform 220ms ease-out,
+    border-color 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.pokemon-tilt-card:hover {
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.35),
+    0 0 20px rgba(197, 164, 109, 0.08);
+}
+
+/* Iridescent holographic layer */
+.pokemon-holo {
+  background:
+    linear-gradient(
+      115deg,
+      transparent 12%,
+      rgba(255, 80, 140, 0.15) 25%,
+      rgba(255, 210, 100, 0.15) 38%,
+      rgba(100, 255, 190, 0.15) 52%,
+      rgba(90, 160, 255, 0.18) 65%,
+      rgba(200, 120, 255, 0.16) 78%,
+      transparent 90%
+    );
+
+  background-size: 220% 220%;
+  background-position:
+    var(--pointer-x, 50%)
+    var(--pointer-y, 50%);
+
+  mix-blend-mode: screen;
+  opacity: 0.35;
+
+  transition: opacity 250ms ease;
+}
+
+.pokemon-tilt-card:hover .pokemon-holo {
+  opacity: 0.95;
+}
+
+/* Light reflection following the cursor */
+.pokemon-holo-glare {
+  background: radial-gradient(
+    circle at var(--pointer-x, 50%) var(--pointer-y, 50%),
+    rgba(255, 255, 255, 0.18) 0%,
+    rgba(255, 255, 255, 0.05) 22%,
+    transparent 60%
+  );
+
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.pokemon-tilt-card:hover .pokemon-holo-glare {
+  opacity: 1;
+}
+
+/* Accessibility: respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .pokemon-tilt-card {
+    transform: none !important;
+    transition: none;
+  }
+
+  .pokemon-tilt-card:hover {
+    transform: none !important;
+  }
+
+  .pokemon-holo,
+  .pokemon-holo-glare {
+    transition: none;
+  }
+}

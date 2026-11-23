@@ -1,0 +1,215 @@
+
+import { useEffect, useState } from "react";
+import { getPokemon } from "../services/pokemon";
+import { createHuntPhase } from "../services/huntPhases";
+import type { DexEntry } from "../types/pokemon";
+
+interface Props {
+  huntId: number;
+  targetDexEntryId: number;
+  onClose: () => void;
+  onRecorded: () => Promise<void>;
+}
+
+export default function RecordPhaseModal({
+  huntId,
+  targetDexEntryId,
+  onClose,
+  onRecorded,
+}: Props) {
+  const [search, setSearch] = useState("");
+  const [results, setResults] = useState<DexEntry[]>([]);
+  const [selected, setSelected] = useState<DexEntry | null>(null);
+  const [addToCollection, setAddToCollection] = useState(true);
+  const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (selected || !search.trim()) {
+      setResults([]);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeout = window.setTimeout(async () => {
+      try {
+        const response = await getPokemon(
+          { search, limit: 20 },
+          controller.signal
+        );
+        setResults(
+          response.data.filter((entry) => entry.id !== targetDexEntryId)
+        );
+      } catch {
+        if (!controller.signal.aborted) {
+          setError("Unable to search Pokémon");
+        }
+      }
+    }, 250);
+
+    return () => {
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [search, selected, targetDexEntryId]);
+
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selected || saving) return;
+
+    setSaving(true);
+    setError(null);
+
+    try {
+      await createHuntPhase(huntId, {
+        dexEntryId: selected.id,
+        addToCollection,
+        notes,
+      });
+      await onRecorded();
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to record phase");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Record shiny phase"
+        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-border bg-surface p-6"
+      >
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-gold">
+              Shiny found
+            </p>
+            <h2 className="mt-1 font-display text-2xl font-bold">
+              Record a phase
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={saving}
+            className="text-sm text-muted hover:text-white"
+          >
+            Close ✕
+          </button>
+        </div>
+
+        <form onSubmit={submit} className="space-y-5">
+          <div>
+            <label htmlFor="phase-search" className="mb-2 block text-sm text-muted">
+              Which shiny did you find?
+            </label>
+
+            {selected ? (
+              <div className="flex items-center gap-3 rounded-lg border border-gold bg-obsidian p-3">
+                <img
+                  src={selected.spriteShiny ?? selected.artworkShiny ?? ""}
+                  alt=""
+                  className="h-14 w-14 object-contain"
+                />
+                <span className="flex-1 font-medium">
+                  {selected.displayName}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelected(null);
+                    setSearch("");
+                  }}
+                  className="text-xs text-gold"
+                >
+                  Change
+                </button>
+              </div>
+            ) : (
+              <>
+                <input
+                  id="phase-search"
+                  value={search}
+                  onChange={(event) => {
+                    setSearch(event.target.value);
+                    setResults([]);
+                  }}
+                  placeholder="Search by name or Dex number"
+                  className="w-full rounded-lg border border-border bg-obsidian px-3 py-3 text-sm outline-none focus:border-gold"
+                />
+                {results.length > 0 && (
+                  <div className="mt-2 max-h-52 overflow-y-auto rounded-lg border border-border bg-obsidian">
+                    {results.map((entry) => (
+                      <button
+                        key={entry.id}
+                        type="button"
+                        onClick={() => setSelected(entry)}
+                        className="flex w-full items-center gap-3 border-b border-border p-2 text-left hover:bg-surface-hover"
+                      >
+                        <img
+                          src={entry.spriteShiny ?? entry.spriteDefault ?? ""}
+                          alt=""
+                          className="h-10 w-10 object-contain"
+                        />
+                        <span className="text-sm">
+                          #{entry.species.nationalDexNumber} {entry.displayName}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          <label className="flex items-start gap-3 rounded-lg border border-border p-4">
+            <input
+              type="checkbox"
+              checked={addToCollection}
+              onChange={(event) => setAddToCollection(event.target.checked)}
+              className="mt-1 accent-[#c5a46d]"
+            />
+            <span>
+              <span className="block text-sm font-medium">
+                Add to my shiny collection
+              </span>
+              <span className="mt-1 block text-xs text-muted">
+                Creates a new specimen and links it to this phase.
+                It won't automatically be marked as in HOME.
+              </span>
+            </span>
+          </label>
+
+          <div>
+            <label htmlFor="phase-notes" className="mb-2 block text-sm text-muted">
+              Notes (optional)
+            </label>
+            <textarea
+              id="phase-notes"
+              rows={3}
+              value={notes}
+              onChange={(event) => setNotes(event.target.value)}
+              placeholder="Where did you find it?"
+              className="w-full rounded-lg border border-border bg-obsidian px-3 py-2.5 text-sm outline-none focus:border-gold"
+            />
+          </div>
+
+          {error && <p role="alert" className="text-sm text-red-400">{error}</p>}
+
+          <button
+            type="submit"
+            disabled={!selected || saving}
+            className="w-full rounded-lg bg-gold px-4 py-3 text-sm font-semibold text-obsidian disabled:opacity-40"
+          >
+            {saving ? "Recording..." : "✦ Record shiny phase"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
