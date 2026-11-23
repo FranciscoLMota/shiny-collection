@@ -7,6 +7,7 @@ import {
 } from "../services/collection";
 import ConfirmModal from "./ConfirmModal";
 import type { OwnedPokemon } from "../types/pokemon";
+import { formatDateDDMMYYYY, parseDateDDMMYYYY } from "../utils/date";
 
 interface Props {
   dexEntryId: number;
@@ -26,6 +27,7 @@ export default function PokemonCollection({
   const [error, setError] = useState<string | null>(null);
   const [pokemonToDelete, setPokemonToDelete] =
     useState<OwnedPokemon | null>(null);
+  const [dateError, setDateError] = useState<string | null>(null);
 
   async function runAction(action: () => Promise<unknown>) {
     setSaving(true);
@@ -46,11 +48,22 @@ export default function PokemonCollection({
   async function handleAdd(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    const isoDate = obtainedAt
+      ? parseDateDDMMYYYY(obtainedAt)
+      : null;
+
+    if (obtainedAt && !isoDate) {
+      setDateError("Enter a valid date in DD/MM/YYYY format");
+      return;
+    }
+
+    setDateError(null);
+
     await runAction(async () => {
       await addOwnedPokemon({
         dexEntryId,
         gameOrigin: gameOrigin || null,
-        obtainedAt: obtainedAt || null,
+        obtainedAt: isoDate,
         isInHome,
       });
 
@@ -93,7 +106,7 @@ export default function PokemonCollection({
                   <p className="mt-1 text-xs text-muted">
                     {owned.gameOrigin || "Unknown game"}
                     {owned.obtainedAt &&
-                      ` · ${owned.obtainedAt.slice(0, 10)}`}
+                      ` · ${formatDateDDMMYYYY(owned.obtainedAt)}`}
                   </p>
                 </div>
 
@@ -152,11 +165,21 @@ export default function PokemonCollection({
           </label>
           <input
             id="obtained-at"
-            type="date"
             value={obtainedAt}
-            onChange={(event) => setObtainedAt(event.target.value)}
+            onChange={(event) => {
+              setObtainedAt(event.target.value);
+              if (dateError) setDateError(null);
+            }}
+            inputMode="numeric"
+            placeholder="DD/MM/YYYY"
+            maxLength={10}
             className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:border-gold"
           />
+          {dateError && (
+            <p role="alert" className="mt-2 text-xs text-red-400">
+              {dateError}
+            </p>
+          )}
         </div>
 
         <label className="flex items-center gap-3 text-sm">

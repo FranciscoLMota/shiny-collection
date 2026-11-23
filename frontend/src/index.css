@@ -94,6 +94,93 @@
   opacity: 1;
 }
 
+.pokemon-shiny-transition {
+  animation: shiny-card-transition 850ms ease-out;
+}
+
+.pokemon-shiny-transition::after {
+  content: "";
+  position: absolute;
+  inset: -30%;
+  z-index: 20;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.85) 48%,
+    rgba(197, 164, 109, 0.45) 52%,
+    transparent 65%
+  );
+  transform: translateX(-100%) rotate(8deg);
+  animation: shiny-card-sheen 850ms ease-out;
+}
+
+.hunt-shiny-transition {
+  animation: hunt-card-transition 850ms ease-out;
+}
+
+.hunt-shiny-transition::after {
+  content: "";
+  position: absolute;
+  inset: -30%;
+  z-index: 20;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.75) 48%,
+    rgba(197, 164, 109, 0.45) 52%,
+    transparent 65%
+  );
+  transform: translateX(-100%) rotate(8deg);
+  animation: shiny-card-sheen 850ms ease-out;
+}
+
+@keyframes shiny-card-transition {
+  0% {
+    transform: scale(1) rotateX(var(--rotate-x, 0deg)) rotateY(var(--rotate-y, 0deg));
+    box-shadow: 0 0 0 rgba(197, 164, 109, 0);
+  }
+  35% {
+    transform: scale(1.07) rotateX(var(--rotate-x, 0deg)) rotateY(var(--rotate-y, 0deg));
+    box-shadow:
+      0 0 36px rgba(197, 164, 109, 0.85),
+      0 0 90px rgba(255, 235, 180, 0.55);
+  }
+  100% {
+    transform: scale(1) rotateX(var(--rotate-x, 0deg)) rotateY(var(--rotate-y, 0deg));
+    box-shadow:
+      0 16px 40px rgba(0, 0, 0, 0.35),
+      0 0 20px rgba(197, 164, 109, 0.08);
+  }
+}
+
+@keyframes shiny-card-sheen {
+  0% {
+    transform: translateX(-100%) rotate(8deg);
+  }
+  100% {
+    transform: translateX(100%) rotate(8deg);
+  }
+}
+
+@keyframes hunt-card-transition {
+  0% {
+    border-color: rgba(48, 48, 48, 1);
+    box-shadow: 0 0 0 rgba(197, 164, 109, 0);
+  }
+  35% {
+    border-color: rgba(197, 164, 109, 0.95);
+    box-shadow:
+      0 0 24px rgba(197, 164, 109, 0.7),
+      0 0 60px rgba(255, 235, 180, 0.35);
+  }
+  100% {
+    border-color: rgba(48, 48, 48, 1);
+    box-shadow: 0 0 0 rgba(197, 164, 109, 0);
+  }
+}
+
 /* Accessibility: respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .pokemon-tilt-card {
@@ -103,6 +190,13 @@
 
   .pokemon-tilt-card:hover {
     transform: none !important;
+  }
+
+  .pokemon-shiny-transition,
+  .pokemon-shiny-transition::after,
+  .hunt-shiny-transition,
+  .hunt-shiny-transition::after {
+    animation: none;
   }
 
   .pokemon-holo,

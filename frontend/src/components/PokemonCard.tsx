@@ -1,5 +1,5 @@
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, MouseEvent } from "react";
 import type { DexEntry } from "../types/pokemon";
 import { Sparkles } from "lucide-react";
@@ -74,6 +74,22 @@ export default function PokemonCard({
   const isInHome = collection?.isInHome ?? false;
   const [isAdding, setIsAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
+  const previousObtained = useRef(isObtained);
+  const [shinyTransition, setShinyTransition] = useState(false);
+
+  useEffect(() => {
+    if (!previousObtained.current && isObtained) {
+      setShinyTransition(true);
+      const timeout = window.setTimeout(
+        () => setShinyTransition(false),
+        850
+      );
+      previousObtained.current = isObtained;
+      return () => window.clearTimeout(timeout);
+    }
+
+    previousObtained.current = isObtained;
+  }, [isObtained]);
 
   const image = isObtained
     ? pokemon.spriteShiny ??
@@ -151,6 +167,7 @@ export default function PokemonCard({
         className={`
           pokemon-tilt-card relative isolate h-full overflow-hidden
           rounded-xl border p-4
+          ${shinyTransition ? "pokemon-shiny-transition" : ""}
           ${isObtained
             ? "border-zinc-100 bg-zinc-700"
             : "border-border bg-surface"

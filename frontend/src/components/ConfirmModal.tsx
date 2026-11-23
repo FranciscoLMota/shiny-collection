@@ -1,5 +1,6 @@
 
 import { useEffect, useId, useRef } from "react";
+import { createPortal } from "react-dom";
 import { AlertTriangle, CircleHelp, X } from "lucide-react";
 
 type ConfirmVariant = "danger" | "warning" | "default";
@@ -70,8 +71,8 @@ export default function ConfirmModal({
 
   const style = variants[variant];
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       <div
         className="absolute inset-0 bg-black/80 backdrop-blur-sm"
         onClick={() => {
@@ -145,6 +146,7 @@ export default function ConfirmModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

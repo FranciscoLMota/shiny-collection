@@ -1,5 +1,6 @@
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { getPokemon } from "../services/pokemon";
 import { createHuntPhase } from "../services/huntPhases";
 import type { DexEntry } from "../types/pokemon";
@@ -20,7 +21,6 @@ export default function RecordPhaseModal({
   const [search, setSearch] = useState("");
   const [results, setResults] = useState<DexEntry[]>([]);
   const [selected, setSelected] = useState<DexEntry | null>(null);
-  const [addToCollection, setAddToCollection] = useState(true);
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +64,7 @@ export default function RecordPhaseModal({
     try {
       await createHuntPhase(huntId, {
         dexEntryId: selected.id,
-        addToCollection,
+        addToCollection: true,
         notes,
       });
       await onRecorded();
@@ -76,8 +76,8 @@ export default function RecordPhaseModal({
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
       <div
         role="dialog"
         aria-modal="true"
@@ -167,24 +167,6 @@ export default function RecordPhaseModal({
             )}
           </div>
 
-          <label className="flex items-start gap-3 rounded-lg border border-border p-4">
-            <input
-              type="checkbox"
-              checked={addToCollection}
-              onChange={(event) => setAddToCollection(event.target.checked)}
-              className="mt-1 accent-[#c5a46d]"
-            />
-            <span>
-              <span className="block text-sm font-medium">
-                Add to my shiny collection
-              </span>
-              <span className="mt-1 block text-xs text-muted">
-                Creates a new specimen and links it to this phase.
-                It won't automatically be marked as in HOME.
-              </span>
-            </span>
-          </label>
-
           <div>
             <label htmlFor="phase-notes" className="mb-2 block text-sm text-muted">
               Notes (optional)
@@ -210,6 +192,7 @@ export default function RecordPhaseModal({
           </button>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import PokemonCard from "../components/PokemonCard";
 import PokemonFilters from "../components/PokemonFilters";
 import PokemonDetailsPanel from "../components/PokemonDetailsPanel";
@@ -40,12 +40,18 @@ export default function NationalDexPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [summary, setSummary] =
     useState<CollectionSummary | null>(null);
+  const previousRefreshKey = useRef(refreshKey);
 
   useEffect(() => {
     const controller = new AbortController();
+    const isMutationRefresh =
+      previousRefreshKey.current !== refreshKey;
+    previousRefreshKey.current = refreshKey;
 
     async function loadPokemon() {
-      setLoading(true);
+      if (!isMutationRefresh) {
+        setLoading(true);
+      }
       setError(null);
 
       try {
@@ -90,6 +96,20 @@ export default function NationalDexPage() {
   async function handleQuickAdd(dexEntryId: number) {
     await quickAddPokemon(dexEntryId);
 
+    setPokemon((current) =>
+      current.map((entry) =>
+        entry.id === dexEntryId
+          ? {
+              ...entry,
+              collection: {
+                ownedCount: (entry.collection?.ownedCount ?? 0) + 1,
+                isObtained: true,
+                isInHome: entry.collection?.isInHome ?? false,
+              },
+            }
+          : entry
+      )
+    );
     setRefreshKey((current) => current + 1);
   }
 

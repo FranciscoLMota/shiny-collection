@@ -1,5 +1,6 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import confetti from "@hiseb/confetti";
 import type { Hunt, HuntStatus } from "../types/hunt";
 import {
   addEncounters,
@@ -28,6 +29,7 @@ const statusStyles: Record<HuntStatus, string> = {
 export default function HuntCard({ hunt, onChanged }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const cardRef = useRef<HTMLElement>(null);
 
   const pokemon = hunt.dexEntry;
   const sprite =
@@ -36,8 +38,15 @@ export default function HuntCard({ hunt, onChanged }: Props) {
   const [showPhaseModal, setShowPhaseModal] = useState(false);
   const [phaseError, setPhaseError] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showCompleteModal, setShowCompleteModal] = useState(false);
-  const [addToCollection, setAddToCollection] = useState(true);
+  const [shinyTransition, setShinyTransition] = useState(false);
+  const [encounterDraft, setEncounterDraft] = useState(
+    String(hunt.encounters)
+  );
+  const [encounterStep, setEncounterStep] = useState("1");
+
+  useEffect(() => {
+    setEncounterDraft(String(hunt.encounters));
+  }, [hunt.encounters]);
 
   async function loadPhases() {
     try {
@@ -53,69 +62,153 @@ export default function HuntCard({ hunt, onChanged }: Props) {
     void loadPhases();
   }, [hunt.id]);
 
-  const lastPhase = phases[phases.length - 1];
-
   const isCompleted = hunt.status === "COMPLETED";
-
-  const currentPhase = phases.length + 1;
-
-  const currentPhaseEncounters = Math.max(
-    0,
-    hunt.encounters - (lastPhase?.totalEncounters ?? 0)
-  );
 
   async function refreshAfterPhase() {
     await loadPhases();
     await onChanged();
   }
 
+  async function saveEncounterCount() {
+    if (busy) return;
 
-  async function perform(action: () => Promise<unknown>) {
+    const nextCount = Number(encounterDraft);
+    if (
+      !Number.isSafeInteger(nextCount) ||
+      nextCount < 0 ||
+      nextCount > 2147483647
+    ) {
+      setEncounterDraft(String(hunt.encounters));
+      setError("Encounter count must be a whole number from 0 to 2147483647");
+      return;
+    }
+
+    if (nextCount === hunt.encounters) return;
+
+    await perform(() =>
+      updateHunt(hunt.id, { encounters: nextCount })
+    );
+  }
+
+
+  async function perform(
+    action: () => Promise<unknown>,
+    celebrate = false
+  ) {
     setBusy(true);
     setError(null);
 
     try {
-      await action();
+      if (celebrate) {
+        setShinyTransition(true);
+      }
+      const result = await action();
+      if (
+        result &&
+        typeof result === "object" &&
+        "data" in result &&
+        result.data &&
+        typeof result.data === "object" &&
+        "encounters" in result.data &&
+        typeof result.data.encounters === "number"
+      ) {
+        setEncounterDraft(String(result.data.encounters));
+      }
+      if (celebrate) {
+        const rect = cardRef.current?.getBoundingClientRect();
+        confetti({
+          position: rect
+            ? {
+                x: rect.left + rect.width / 2,
+                y: rect.top + rect.height / 2,
+              }
+            : undefined,
+          count: 140,
+          size: 1,
+          velocity: 220,
+          fade: true,
+          color: ["#c5a46d", "#ffffff", "#69a884", "#60a5fa", "#f472b6"],
+        });
+        await new Promise((resolve) =>
+          window.setTimeout(resolve, 850)
+        );
+      }
       await onChanged();
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Something went wrong"
       );
     } finally {
+      if (celebrate) {
+        setShinyTransition(false);
+      }
       setBusy(false);
     }
   }
 
-  function handleComplete() {
-    const addToCollection = window.confirm(
-      "Add the shiny Pokémon to your collection?\n\n" +
-      "OK: Complete and add to collection\n" +
-      "Cancel: Choose another completion option"
-    );
-
-    if (!addToCollection) {
-      const completeOnly = window.confirm(
-        "Complete this hunt without adding a Pokémon?"
-      );
-
-      if (!completeOnly) return;
-    }
-
-    void perform(() => completeHunt(hunt.id, addToCollection));
-  }
-
   return (
-    <article className="rounded-xl border border-border bg-surface p-5">
+    <article
+      ref={cardRef}
+      className={`
+        relative isolate overflow-hidden rounded-xl border border-border bg-surface p-5
+        ${shinyTransition ? "hunt-shiny-transition" : ""}
+      `}
+    >
       <div className="mb-5 flex items-start justify-between gap-3">
         <span className="font-mono text-xs text-muted">
           #{String(pokemon.species.nationalDexNumber).padStart(4, "0")}
         </span>
+        {hunt.status !== "COMPLETED" ? (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() =>
+                void perform(() =>
+                  updateHunt(hunt.id, {
+                    status: hunt.status === "ACTIVE" ? "PAUSED" : "ACTIVE",
+                  })
+                )
+              }
+              className={`rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
+                hunt.status === "ACTIVE"
+                  ? "border-gold/40 bg-gold/10 text-gold hover:bg-gold/20"
+                  : "border-success/40 bg-success/10 text-success hover:bg-success/20"
+              }`}
+            >
+              {hunt.status === "ACTIVE" ? "Stop" : "Start"}
+            </button>
 
-        <span
-          className={`rounded-md border px-2.5 py-1 text-xs font-semibold ${statusStyles[hunt.status]}`}
-        >
-          {hunt.status}
-        </span>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setShowDeleteModal(true)}
+              aria-label={`Delete ${pokemon.displayName} hunt`}
+              title="Delete hunt"
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-red-400/40 text-sm font-bold text-red-400 transition-colors hover:border-red-400 hover:bg-red-400/10 disabled:opacity-50"
+            >
+              ×
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <span
+              className={`rounded-md border px-2.5 py-1 text-xs font-semibold ${statusStyles[hunt.status]}`}
+            >
+              {hunt.status}
+            </span>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setShowDeleteModal(true)}
+              aria-label={`Delete ${pokemon.displayName} hunt`}
+              title="Delete hunt"
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-red-400/40 text-sm font-bold text-red-400 transition-colors hover:border-red-400 hover:bg-red-400/10 disabled:opacity-50"
+            >
+              ×
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="flex items-center gap-4">
@@ -145,151 +238,170 @@ export default function HuntCard({ hunt, onChanged }: Props) {
       </div>
 
       <div className="my-6 rounded-lg border border-border bg-obsidian p-4">
-        <p className="text-xs font-medium tracking-widest text-muted uppercase">
-          Encounters
-        </p>
-        <p className="mt-2 font-display text-4xl font-bold tabular-nums">
-          {hunt.encounters.toLocaleString()}
-        </p>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="text-left">
+            <p className="text-xs font-medium tracking-widest text-muted uppercase">
+              Encounters
+            </p>
+            {isCompleted ? (
+              <p className="mt-2 font-display text-4xl font-bold tabular-nums">
+                {hunt.encounters.toLocaleString()}
+              </p>
+            ) : (
+              <input
+                type="number"
+                min="0"
+                max="2147483647"
+                step="1"
+                value={encounterDraft}
+                disabled={busy}
+                onChange={(event) => setEncounterDraft(event.target.value)}
+                onBlur={() => void saveEncounterCount()}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.currentTarget.blur();
+                  }
+                  if (event.key === "Escape") {
+                    setEncounterDraft(String(hunt.encounters));
+                  }
+                }}
+                aria-label="Encounter count"
+                className="mt-2 w-full bg-transparent font-display text-4xl font-bold tabular-nums outline-none focus:text-gold disabled:cursor-not-allowed"
+              />
+            )}
+          </div>
 
-        <div className="mt-4 grid grid-cols-3 gap-2">
-          {[1, 10, 100].map((amount) => (
-            <button
-              key={amount}
-              type="button"
-              disabled={busy || hunt.status !== "ACTIVE"}
-              onClick={() =>
-                void perform(() => addEncounters(hunt.id, amount))
-              }
-              className="rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold hover:border-gold hover:text-gold disabled:cursor-not-allowed disabled:opacity-30"
-            >
-              +{amount}
-            </button>
-          ))}
+          <div className="text-right">
+            <p className="text-xs font-medium tracking-widest text-muted uppercase">
+              Phases
+            </p>
+            <p className="mt-2 font-display text-4xl font-bold tabular-nums">
+              {phases.length.toLocaleString()}
+            </p>
+          </div>
         </div>
 
+        {!isCompleted && (
+          <div className="mt-4 grid grid-cols-[1fr_5rem_1fr] items-stretch gap-2">
+            <button
+              type="button"
+              disabled={busy || hunt.status !== "ACTIVE"}
+              onClick={() => {
+                const amount = Number(encounterStep);
+                if (Number.isSafeInteger(amount) && amount > 0) {
+                  const current = Number(encounterDraft);
+                  if (Number.isSafeInteger(current)) {
+                    setEncounterDraft(
+                      String(Math.max(0, current - amount))
+                    );
+                  }
+                  void perform(() => addEncounters(hunt.id, -amount));
+                }
+              }}
+              className="rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold hover:border-gold hover:text-gold disabled:cursor-not-allowed disabled:opacity-30"
+            >
+              −
+            </button>
 
-        {(!isCompleted || phases.length > 0) && (
-          <section className="my-5 rounded-lg border border-border bg-obsidian p-4">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-widest text-muted">
-                  {isCompleted ? "Final phase" : "Current phase"}
-                </p>
+            <input
+              type="number"
+              min="1"
+              max="10000"
+              step="1"
+              value={encounterStep}
+              disabled={busy || hunt.status !== "ACTIVE"}
+              onChange={(event) => setEncounterStep(event.target.value)}
+              aria-label="Encounter adjustment value"
+              className="min-w-0 rounded-lg border border-border bg-surface px-2 py-2 text-center text-sm font-semibold outline-none focus:border-gold disabled:opacity-30"
+            />
 
-                <p className="mt-1 font-display text-2xl font-bold">
-                  Phase {currentPhase}
-                </p>
-              </div>
+            <button
+              type="button"
+              disabled={busy || hunt.status !== "ACTIVE"}
+              onClick={() => {
+                const amount = Number(encounterStep);
+                if (Number.isSafeInteger(amount) && amount > 0) {
+                  const current = Number(encounterDraft);
+                  if (Number.isSafeInteger(current)) {
+                    setEncounterDraft(
+                      String(Math.min(2147483647, current + amount))
+                    );
+                  }
+                  void perform(() => addEncounters(hunt.id, amount));
+                }
+              }}
+              className="rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold hover:border-gold hover:text-gold disabled:cursor-not-allowed disabled:opacity-30"
+            >
+              + 
+            </button>
+          </div>
+        )}
 
-              <div className="text-right">
-                <p className="text-xs text-muted">
-                  {isCompleted ? "Final phase encounters" : "Phase encounters"}
-                </p>
+        {phaseError && (
+          <p role="alert" className="mt-3 text-xs text-red-400">
+            {phaseError}
+          </p>
+        )}
 
-                <p className="font-display text-2xl font-bold text-gold tabular-nums">
-                  {currentPhaseEncounters.toLocaleString()}
-                </p>
-              </div>
-            </div>
-
-            {hunt.status === "ACTIVE" && (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => setShowPhaseModal(true)}
-                className="w-full rounded-lg border border-gold/50 bg-gold/10 px-4 py-3 text-sm font-semibold text-gold hover:bg-gold/20 disabled:opacity-40"
-              >
-                ✦ Found another shiny
-              </button>
-            )}
-
-            {phaseError && (
-              <p role="alert" className="mt-3 text-xs text-red-400">
-                {phaseError}
-              </p>
-            )}
-
-            {phases.length > 0 && (
-              <div className="mt-5 border-t border-border pt-4">
-                <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">
-                  Phase history
-                </p>
-
-                <div className="space-y-3">
-                  {phases.map((phase) => (
-                    <div
-                      key={phase.id}
-                      className="flex items-center gap-3"
-                    >
-                      <img
-                        src={
-                          phase.dexEntry.spriteShiny ??
-                          phase.dexEntry.artworkShiny ??
-                          ""
-                        }
-                        alt=""
-                        className="h-10 w-10 object-contain"
-                      />
-
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">
-                          Phase {phase.phaseNumber} ·{" "}
-                          {phase.dexEntry.displayName}
-                        </p>
-
-                        <p className="text-xs text-muted">
-                          {phase.encounters.toLocaleString()} encounters
-                        </p>
-                      </div>
-
-                      {phase.ownedPokemonId && (
-                        <span className="text-xs text-success">
-                          Collected
-                        </span>
-                      )}
-                    </div>
-                  ))}
+        {phases.length > 0 && (
+          <div className="mt-5 border-t border-border pt-4">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">
+              Phase history
+            </p>
+            <div className="space-y-3">
+              {phases.map((phase) => (
+                <div key={phase.id} className="flex items-center gap-3">
+                  <img
+                    src={
+                      phase.dexEntry.spriteShiny ??
+                      phase.dexEntry.artworkShiny ??
+                      ""
+                    }
+                    alt=""
+                    className="h-10 w-10 object-contain"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">
+                      Phase {phase.phaseNumber} · {phase.dexEntry.displayName}
+                    </p>
+                    <p className="text-xs text-muted">
+                      {phase.encounters.toLocaleString()} encounters
+                    </p>
+                  </div>
+                  {phase.ownedPokemonId && (
+                    <span className="text-xs text-success">Collected</span>
+                  )}
                 </div>
-              </div>
-            )}
-          </section>
+              ))}
+            </div>
+          </div>
         )}
 
 
       </div>
 
       {hunt.status !== "COMPLETED" && (
-        <div className="space-y-3">
-          <label className="block text-xs text-muted">
-            Hunt status
-          </label>
-
-          <select
-            value={hunt.status}
-            disabled={busy}
-            onChange={(event) =>
-              void perform(() =>
-                updateHunt(hunt.id, {
-                  status: event.target.value as HuntStatus,
-                })
-              )
-            }
-            className="w-full rounded-lg border border-border bg-obsidian px-3 py-2.5 text-sm outline-none focus:border-gold"
-          >
-            <option value="PLANNED">Planned</option>
-            <option value="ACTIVE">Active</option>
-            <option value="PAUSED">Paused</option>
-          </select>
-
+        <div className="grid grid-cols-4 gap-2">
+          {hunt.status === "ACTIVE" && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setShowPhaseModal(true)}
+              className="col-span-1 rounded-lg border border-gold/50 bg-gold/10 px-2 py-2.5 text-xs font-semibold text-gold hover:bg-gold/20 disabled:opacity-40"
+            >
+              ✦ Phase
+            </button>
+          )}
           <button
             type="button"
             disabled={busy}
-            onClick={() => {
-              setAddToCollection(true);
-              setShowCompleteModal(true);
-            }}
-            className="w-full rounded-lg bg-gold px-4 py-2.5 text-sm font-semibold text-obsidian hover:opacity-90 disabled:opacity-50"
+            onClick={() =>
+              void perform(
+                () => completeHunt(hunt.id, true),
+                true
+              )
+            }
+            className={`${hunt.status === "ACTIVE" ? "col-span-3" : "col-span-4"} rounded-lg bg-gold px-4 py-2.5 text-sm font-semibold text-obsidian hover:opacity-90 disabled:opacity-50`}
           >
             ✦ Complete hunt
           </button>
@@ -311,17 +423,6 @@ export default function HuntCard({ hunt, onChanged }: Props) {
           {error}
         </p>
       )}
-
-      <div className="mt-5 border-t border-border pt-4">
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => setShowDeleteModal(true)}
-          className="text-xs text-muted transition-colors hover:text-red-400 disabled:opacity-50"
-        >
-          Delete hunt
-        </button>
-      </div>
 
       {showPhaseModal && (
         <RecordPhaseModal
@@ -347,44 +448,6 @@ export default function HuntCard({ hunt, onChanged }: Props) {
           });
         }}
       />
-
-
-      <ConfirmModal
-        open={showCompleteModal}
-        title="Shiny found!"
-        description={`Congratulations on completing your ${hunt.dexEntry.displayName} hunt! You recorded ${hunt.encounters.toLocaleString()} encounters.`}
-        confirmLabel="Complete hunt"
-        variant="default"
-        loading={busy}
-        onCancel={() => setShowCompleteModal(false)}
-        onConfirm={() => {
-          void perform(async () => {
-            await completeHunt(hunt.id, addToCollection);
-            setShowCompleteModal(false);
-          });
-        }}
-      >
-        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-obsidian p-4">
-          <input
-            type="checkbox"
-            checked={addToCollection}
-            onChange={(event) => setAddToCollection(event.target.checked)}
-            className="mt-1 h-4 w-4 accent-[#c5a46d]"
-          />
-
-          <span>
-            <span className="block text-sm font-medium text-white">
-              Add to my shiny collection
-            </span>
-
-            <span className="mt-1 block text-xs leading-5 text-muted">
-              Creates a new shiny specimen in your National Pokédex.
-              Uncheck this if you've already recorded the Pokémon.
-            </span>
-          </span>
-        </label>
-      </ConfirmModal>
-
     </article>
   );
 }

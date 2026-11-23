@@ -50,6 +50,7 @@ export async function updateHunt(
   id: number,
   data: {
     status?: HuntStatus;
+    encounters?: number;
     game?: string | null;
     method?: string | null;
     notes?: string | null;
