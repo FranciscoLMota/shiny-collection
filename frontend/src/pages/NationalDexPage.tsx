@@ -13,6 +13,18 @@ import {
 } from "../services/collection";
 import { quickAddPokemon } from "../services/collection";
 
+const generationColors = [
+  "text-sky-400",
+  "text-emerald-400",
+  "text-amber-400",
+  "text-violet-400",
+  "text-rose-400",
+  "text-cyan-400",
+  "text-orange-400",
+  "text-fuchsia-400",
+  "text-lime-400",
+];
+
 export default function NationalDexPage() {
   const [pokemon, setPokemon] = useState<DexEntry[]>([]);
   const [filters, setFilters] = useState<FilterValues>({
@@ -96,6 +108,76 @@ export default function NationalDexPage() {
             Explore your living shiny collection.
           </p>
         </header>
+
+        {summary?.generations?.length ? (
+          <details open className="mb-8 rounded-xl border border-border bg-surface">
+            <summary className="cursor-pointer px-5 py-4 font-display text-lg font-semibold marker:text-gold">
+              Generation progress
+              <span className="ml-2 font-sans text-sm font-normal text-muted">
+                Distinct Pokémon species collected
+              </span>
+            </summary>
+            <div className="grid grid-cols-2 gap-4 border-t border-border p-5 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9">
+              {summary.generations.map((generation) => {
+                const color =
+                  generationColors[
+                    (generation.generation - 1) % generationColors.length
+                  ];
+
+                return (
+                  <div
+                    key={generation.generation}
+                    className="flex flex-col items-center gap-2"
+                  >
+                    <div
+                      role="img"
+                      aria-label={`Generation ${generation.generation}: ${generation.obtained} of ${generation.total} species, ${generation.obtainedPercent}%`}
+                      className="relative h-20 w-20"
+                    >
+                      <svg
+                        viewBox="0 0 100 100"
+                        className="-rotate-90"
+                        aria-hidden="true"
+                      >
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="42"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="8"
+                          className="text-border"
+                        />
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="42"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="8"
+                          strokeLinecap="round"
+                          pathLength="100"
+                          strokeDasharray="100 100"
+                          strokeDashoffset={100 - generation.obtainedPercent}
+                          className={`${color} transition-[stroke-dashoffset]`}
+                        />
+                      </svg>
+                      <span className="absolute inset-0 flex items-center justify-center text-sm font-semibold text-white">
+                        {generation.obtainedPercent}%
+                      </span>
+                    </div>
+                    <p className="text-sm font-medium">
+                      Generation {generation.generation}
+                    </p>
+                    <p className="text-xs text-muted">
+                      {generation.obtained} / {generation.total} species
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </details>
+        ) : null}
 
         {summary && (
           <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4">

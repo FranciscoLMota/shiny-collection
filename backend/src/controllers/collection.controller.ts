@@ -190,7 +190,14 @@ export async function getCollectionSummary(
   res: Response
 ): Promise<void> {
   try {
-    const [required, obtained, inHome, specimens] =
+    const [
+      required,
+      obtained,
+      inHome,
+      specimens,
+      generationSpecies,
+      obtainedGenerationSpecies,
+    ] =
       await Promise.all([
         prisma.dexEntry.count({
           where: { isRequired: true },
@@ -208,7 +215,46 @@ export async function getCollectionSummary(
           },
         }),
         prisma.ownedPokemon.count(),
+        prisma.pokemonSpecies.groupBy({
+          by: ["generation"],
+          _count: { _all: true },
+          orderBy: { generation: "asc" },
+        }),
+        prisma.pokemonSpecies.groupBy({
+          by: ["generation"],
+          where: {
+            entries: {
+              some: {
+                ownedPokemon: { some: {} },
+              },
+            },
+          },
+          _count: { _all: true },
+        }),
       ]);
+
+    const obtainedByGeneration = new Map(
+      obtainedGenerationSpecies.map(({ generation, _count }) => [
+        generation,
+        _count._all,
+      ])
+    );
+    const generations = generationSpecies.map(
+      ({ generation, _count }) => {
+        const total = _count._all;
+        const generationObtained =
+          obtainedByGeneration.get(generation) ?? 0;
+
+        return {
+          generation,
+          total,
+          obtained: generationObtained,
+          obtainedPercent: total
+            ? Math.round((generationObtained / total) * 10000) / 100
+            : 0,
+        };
+      }
+    );
 
     res.json({
       data: {
@@ -222,6 +268,7 @@ export async function getCollectionSummary(
         homePercent: required
           ? Math.round((inHome / required) * 10000) / 100
           : 0,
+        generations,
       },
     });
   } catch (error) {

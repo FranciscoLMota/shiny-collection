@@ -17,6 +17,12 @@ export interface CollectionSummary {
   specimens: number;
   obtainedPercent: number;
   homePercent: number;
+  generations?: {
+    generation: number;
+    total: number;
+    obtained: number;
+    obtainedPercent: number;
+  }[];
 }
 
 async function request<T>(
