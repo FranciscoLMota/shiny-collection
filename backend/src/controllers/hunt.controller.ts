@@ -125,7 +125,7 @@ export async function updateHunt(
     }
 
     const body = req.body ?? {};
-    const allowed = ["game", "method", "notes", "status"];
+    const allowed = ["game", "method", "notes", "status", "encounters"];
 
     if (
       !Object.keys(body).length ||
@@ -149,6 +149,7 @@ export async function updateHunt(
       method?: string | null;
       notes?: string | null;
       status?: HuntStatus;
+      encounters?: number;
       startedAt?: Date | null;
       completedAt?: Date | null;
     } = {};
@@ -162,6 +163,16 @@ export async function updateHunt(
         }
         data[field] = body[field] || null;
       }
+    }
+
+    if ("encounters" in body) {
+      if (!Number.isSafeInteger(body.encounters) ||
+          body.encounters < 0 ||
+          body.encounters > 2147483647) {
+        res.status(400).json({ error: "Invalid encounter count" });
+        return;
+      }
+      data.encounters = body.encounters;
     }
 
     if ("status" in body) {
@@ -206,7 +217,7 @@ export async function addEncounters(
     const amount = req.body?.amount;
 
     if (!id || !Number.isSafeInteger(amount) ||
-        amount < 1 || amount > 10000) {
+        amount < -10000 || amount > 10000 || amount === 0) {
       res.status(400).json({ error: "Invalid encounter amount" });
       return;
     }
@@ -227,14 +238,19 @@ export async function addEncounters(
       return;
     }
 
+    const nextEncounters = Math.max(
+      0,
+      Math.min(2147483647, hunt.encounters + amount)
+    );
+
     const result = await prisma.hunt.updateMany({
       where: {
         id,
         status: "ACTIVE",
-        encounters: { lte: 2147483647 - amount },
+        encounters: hunt.encounters,
       },
       data: {
-        encounters: { increment: amount },
+        encounters: nextEncounters,
       },
     });
 
