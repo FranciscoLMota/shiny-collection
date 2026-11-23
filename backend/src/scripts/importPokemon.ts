@@ -3,7 +3,7 @@ import { prisma } from "../lib/prisma.js";
 
 const API = "https://pokeapi.co/api/v2";
 const REGIONS = ["alola", "galar", "hisui", "paldea"];
-const LIMIT = Number(process.env.IMPORT_LIMIT ?? 25);
+const LIMIT = Number(process.env.IMPORT_LIMIT ?? 2000);
 
 type NamedResource = {
   name: string;

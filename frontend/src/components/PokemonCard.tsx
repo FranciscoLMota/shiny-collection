@@ -2,10 +2,12 @@
 import { useRef, useState } from "react";
 import type { CSSProperties, MouseEvent } from "react";
 import type { DexEntry } from "../types/pokemon";
+import { Sparkles } from "lucide-react";
 
 interface PokemonCardProps {
   pokemon: DexEntry;
   onClick: (id: number) => void;
+  onQuickAdd?: (dexEntryId: number) => Promise<void>;
 }
 
 const typeColors: Record<string, string> = {
@@ -58,6 +60,7 @@ const defaultStyle: CardStyle = {
 export default function PokemonCard({
   pokemon,
   onClick,
+  onQuickAdd,
 }: PokemonCardProps) {
   const cardRef = useRef<HTMLElement>(null);
   const [isHovered, setIsHovered] = useState(false);
@@ -66,14 +69,11 @@ export default function PokemonCard({
     pokemon.species.nationalDexNumber
   ).padStart(4, "0");
 
-  const sprite =
-    pokemon.spriteShiny ??
-    pokemon.artworkShiny ??
-    pokemon.spriteDefault;
-
   const collection = pokemon.collection;
   const isObtained = collection?.isObtained ?? false;
   const isInHome = collection?.isInHome ?? false;
+  const [isAdding, setIsAdding] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
 
   const image = isObtained
     ? pokemon.spriteShiny ??
@@ -113,6 +113,29 @@ export default function PokemonCard({
     card.style.setProperty("--rotate-y", "0deg");
   }
 
+  async function handleQuickAdd(
+    event: React.MouseEvent<HTMLButtonElement>
+  ) {
+    event.stopPropagation();
+
+    if (isAdding || isObtained || !onQuickAdd) return;
+
+    setIsAdding(true);
+    setAddError(null);
+
+    try {
+      await onQuickAdd(pokemon.id);
+    } catch (error) {
+      setAddError(
+        error instanceof Error
+          ? error.message
+          : "Unable to add Pokémon"
+      );
+    } finally {
+      setIsAdding(false);
+    }
+  }
+
 
 
   return (
@@ -148,6 +171,46 @@ export default function PokemonCard({
               {pokemon.region}
             </span>
           )}
+          <div className="mt-auto pt-5">
+            <div className="">
+              {isObtained ? (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-white">
+                    <Sparkles color="#ffffff" />
+                  </span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  disabled={isAdding || !onQuickAdd}
+                  onClick={handleQuickAdd}
+                  className="
+          flex w-full items-center justify-center gap-2
+          rounded-lg border border-gold/40
+          bg-gold/10 px-3 py-2.5
+          text-xs font-semibold text-gold
+          transition-all duration-200
+          hover:border-gold hover:bg-gold hover:text-obsidian
+          disabled:cursor-not-allowed disabled:opacity-50
+        "
+                >
+                  {isAdding ? (
+                    "Adding..."
+                  ) : (
+                    <>
+                      <span className="text-base leading-none">+</span>
+                    </>
+                  )}
+                </button>
+              )}
+
+              {addError && (
+                <p role="alert" className="mt-2 text-xs text-red-400">
+                  {addError}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="flex h-36 items-center justify-center">

@@ -88,3 +88,23 @@ export async function getCollectionSummary():
 
   return result.data;
 }
+
+export async function quickAddPokemon(dexEntryId: number) {
+  const response = await fetch("/api/collection", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      dexEntryId,
+      isInHome: false,
+    }),
+  });
+
+  if (!response.ok) {
+    const result = await response.json().catch(() => null);
+    throw new Error(result?.error ?? "Failed to add Pokémon");
+  }
+
+  return response.json();
+}

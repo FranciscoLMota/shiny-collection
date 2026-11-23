@@ -11,6 +11,7 @@ import {
   getCollectionSummary,
   type CollectionSummary,
 } from "../services/collection";
+import { quickAddPokemon } from "../services/collection";
 
 export default function NationalDexPage() {
   const [pokemon, setPokemon] = useState<DexEntry[]>([]);
@@ -72,6 +73,14 @@ export default function NationalDexPage() {
     };
   }, [refreshKey]);
   const page = filters.page ?? 1;
+
+
+  async function handleQuickAdd(dexEntryId: number) {
+    await quickAddPokemon(dexEntryId);
+
+    setRefreshKey((current) => current + 1);
+  }
+
 
   return (
     <main className="min-h-screen bg-obsidian px-4 py-10 text-white sm:px-8 lg:px-12">
@@ -154,6 +163,7 @@ export default function NationalDexPage() {
                   key={entry.id}
                   pokemon={entry}
                   onClick={setSelectedId}
+                  onQuickAdd={handleQuickAdd}
                 />
               ))}
             </div>
