@@ -80,7 +80,7 @@ export default function HuntBoardPage() {
           <div>
             <span className="section-index" aria-hidden="true">02</span>
             <p className="mb-2 font-mono text-micro uppercase tracking-widest text-ink">
-              SPON / Hunt Observations
+              S.P.O.N. / Hunt Observations
             </p>
             <h1 className="font-display text-3xl font-bold uppercase leading-none tracking-tight sm:text-4xl">
               Hunt Board

@@ -8,25 +8,40 @@ import HuntBoardPage from "./pages/HuntBoardPage";
 export default function App() {
   return (
     <div className="flex min-h-screen flex-col bg-canvas">
-      <nav className="site-navigation sticky top-0 z-40 border-b border-outline bg-canvas">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-2 sm:px-8 lg:px-12">
-          <span className="flex items-center gap-1.5 font-display text-base font-bold uppercase tracking-[0.04em] text-ink">
-            <GraphicMark variant="solar" size={22} />
-            Shiny Phenotype Observation Network
-          </span>
+      <nav
+        aria-label="Primary navigation"
+        className="site-navigation sticky top-0 z-40 border-b border-outline bg-canvas"
+      >
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-2 sm:px-8 lg:px-12">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <span className="grid size-9 shrink-0 place-items-center border border-accent/40 bg-surface text-accent">
+              <GraphicMark variant="solar" size={18} />
+            </span>
+            <span className="flex min-w-0 flex-col leading-none">
+              <span className="font-display text-sm font-bold uppercase tracking-[0.16em] text-ink">
+                S.P.O.N.
+              </span>
+              <span className="sr-only font-mono text-[9px] uppercase tracking-[0.12em] text-muted sm:not-sr-only">
+                Shiny Phenotype Observation Network
+              </span>
+            </span>
+          </div>
 
-          <div className="flex gap-2">
+          <div className="flex shrink-0 items-center gap-1 border border-outline bg-surface p-1">
             <NavLink
               to="/dex"
               viewTransition
               className={({ isActive }) =>
-                `btn border-transparent ${
+                `flex min-h-9 items-center gap-2 border px-2.5 text-xs font-medium transition-colors duration-150 ease-instrument motion-reduce:transition-none ${
                   isActive
-                    ? "bg-accent text-accent-ink"
-                    : "text-ink hover:bg-surface"
+                    ? "border-accent/50 bg-canvas text-ink"
+                    : "border-transparent text-muted hover:border-outline hover:bg-canvas hover:text-ink"
                 }`
               }
             >
+              <span aria-hidden="true" className="font-mono text-[9px] text-accent">
+                01
+              </span>
               Pokédex
             </NavLink>
 
@@ -34,13 +49,16 @@ export default function App() {
               to="/hunts"
               viewTransition
               className={({ isActive }) =>
-                `btn border-transparent ${
+                `flex min-h-9 items-center gap-2 border px-2.5 text-xs font-medium transition-colors duration-150 ease-instrument motion-reduce:transition-none ${
                   isActive
-                    ? "bg-accent text-accent-ink"
-                    : "text-ink hover:bg-surface"
+                    ? "border-accent/50 bg-canvas text-ink"
+                    : "border-transparent text-muted hover:border-outline hover:bg-canvas hover:text-ink"
                 }`
               }
             >
+              <span aria-hidden="true" className="font-mono text-[9px] text-accent">
+                02
+              </span>
               Hunt Board
             </NavLink>
           </div>

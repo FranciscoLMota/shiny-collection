@@ -133,9 +133,9 @@
 [data-theme="rose-canopy"] {
   color-scheme: light;
 
-  --bios-canvas: #f8e4ec;
-  --bios-surface: #f2dce6;
-  --bios-elevated: #fff3f8;
+  --bios-canvas: #f6e8e5;
+  --bios-surface: #ebdbde;
+  --bios-elevated: #fff6f2;
   --bios-ink: #294237;
   --bios-muted: #635361;
   --bios-muted-text: var(--bios-muted);

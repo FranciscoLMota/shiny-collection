@@ -135,7 +135,7 @@ export default function NationalDexPage() {
           <GraphicMark variant="orbital" className="bios-heading-mark" />
           <span className="section-index" aria-hidden="true">01</span>
           <p className="mb-2 font-mono text-micro uppercase tracking-widest text-ink">
-            SPON / Specimen Collection
+            S.P.O.N. / Specimen Collection
           </p>
           <h1 className="font-display text-3xl font-bold uppercase leading-none tracking-tight sm:text-4xl">
             National Pokédex

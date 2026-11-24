@@ -11,14 +11,15 @@ export const themes = [
 
 type Theme = (typeof themes)[number]["id"];
 const storageKey = "shiny-archive-theme";
+const defaultTheme: Theme = "indigo-observatory";
 let requestedTheme: Theme | undefined;
 
 export function readTheme(): Theme {
   try {
     const savedTheme = localStorage.getItem(storageKey);
-    return themes.find(({ id }) => id === savedTheme)?.id ?? themes[0].id;
+    return themes.find(({ id }) => id === savedTheme)?.id ?? defaultTheme;
   } catch {
-    return themes[0].id;
+    return defaultTheme;
   }
 }
 
