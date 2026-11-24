@@ -1,5 +1,6 @@
 
 import { useEffect, useRef, useState } from "react";
+import { ChevronDown, SlidersHorizontal } from "lucide-react";
 import PokemonCard from "../components/PokemonCard";
 import PokemonFilters from "../components/PokemonFilters";
 import PokemonDetailsPanel from "../components/PokemonDetailsPanel";
@@ -14,18 +15,19 @@ import {
 import { quickAddPokemon } from "../services/collection";
 import { createHunt } from "../services/hunt";
 import Button from "../components/Button";
+import { ProgressBar } from "../components/ProgressBar";
+import { GraphicMark } from "../components/GraphicMark";
+import SystemLoading from "../components/SystemLoading";
+import ScrambleNumber from "../components/ScrambleNumber";
+import { delayForDevLoadingPreview } from "../utils/devLoadingPreview";
 
 const generationColors = [
-  "text-sky-400",
-  "text-emerald-400",
-  "text-amber-400",
-  "text-violet-400",
-  "text-rose-400",
-  "text-cyan-400",
-  "text-orange-400",
-  "text-fuchsia-400",
-  "text-lime-400",
-];
+  "accent",
+  "sky",
+  "solar",
+  "success",
+  "danger",
+] as const;
 
 export default function NationalDexPage() {
   const [pokemon, setPokemon] = useState<DexEntry[]>([]);
@@ -58,6 +60,9 @@ export default function NationalDexPage() {
 
       try {
         const result = await getPokemon(filters, controller.signal);
+        if (!isMutationRefresh) {
+          await delayForDevLoadingPreview(controller.signal);
+        }
 
         if (!controller.signal.aborted) {
           setPokemon(result.data);
@@ -124,13 +129,15 @@ export default function NationalDexPage() {
 
 
   return (
-    <main className="min-h-screen bg-obsidian px-4 py-10 text-white sm:px-8 lg:px-12">
+    <main className="page-enter flex-1 bg-canvas px-4 py-6 text-ink sm:px-8 lg:px-12">
       <div className="mx-auto max-w-7xl">
-        <header className="mb-8">
-          <p className="mb-2 font-mono text-micro uppercase tracking-widest text-gold">
-            Shiny Archive / Collection
+        <header className="bios-heading mb-6">
+          <GraphicMark variant="orbital" className="bios-heading-mark" />
+          <span className="section-index" aria-hidden="true">01</span>
+          <p className="mb-2 font-mono text-micro uppercase tracking-widest text-ink">
+            SPON / Specimen Collection
           </p>
-          <h1 className="font-display text-2xl font-semibold tracking-tight">
+          <h1 className="font-display text-3xl font-bold uppercase leading-none tracking-tight sm:text-4xl">
             National Pokédex
           </h1>
           <p className="mt-3 font-body text-sm text-muted">
@@ -138,142 +145,103 @@ export default function NationalDexPage() {
           </p>
         </header>
 
-        {summary?.generations?.length ? (
-          <details open className="mb-8 rounded-xl border border-border bg-surface">
-            <summary className="cursor-pointer px-5 py-4 font-display text-xl font-semibold marker:text-gold">
-              Generation progress
-              <span className="ml-2 font-body text-sm text-muted">
-                Distinct Pokémon species collected
-              </span>
-            </summary>
-            <div className="grid grid-cols-2 gap-4 border-t border-border p-5 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9">
-              {summary.generations.map((generation) => {
-                const color =
-                  generationColors[
-                    (generation.generation - 1) % generationColors.length
-                  ];
-
-                return (
-                  <div
-                    key={generation.generation}
-                    className="flex flex-col items-center gap-2"
-                  >
-                    <div
-                      role="img"
-                      aria-label={`Generation ${generation.generation}: ${generation.obtained} of ${generation.total} species, ${generation.obtainedPercent}%`}
-                      className="relative h-20 w-20"
-                    >
-                      <svg
-                        viewBox="0 0 100 100"
-                        className="-rotate-90"
-                        aria-hidden="true"
-                      >
-                        <circle
-                          cx="50"
-                          cy="50"
-                          r="42"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="8"
-                          className="text-border"
-                        />
-                        <circle
-                          cx="50"
-                          cy="50"
-                          r="42"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="8"
-                          strokeLinecap="round"
-                          pathLength="100"
-                          strokeDasharray="100 100"
-                          strokeDashoffset={100 - generation.obtainedPercent}
-                          className={`${color} transition-[stroke-dashoffset]`}
-                        />
-                      </svg>
-                      <span className="absolute inset-0 flex items-center justify-center font-body text-xs font-medium text-white">
-                        {generation.obtainedPercent}%
-                      </span>
-                    </div>
-                    <p className="font-body text-sm">
-                      Generation {generation.generation}
-                    </p>
-                    <p className="font-mono text-micro uppercase tracking-widest text-muted">
-                      {generation.obtained} / {generation.total} species
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          </details>
-        ) : null}
-
         {summary && (
-          <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4">
+          <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
             {[
               ["Required entries", summary.required],
               ["Obtained", summary.obtained],
               ["In Pokémon HOME", summary.inHome],
               ["Total shinies", summary.specimens],
-            ].map(([label, value]) => (
+            ].map(([label, value], index) => (
               <div
                 key={label}
-                className="rounded-xl border border-border bg-surface p-5"
+                className="data-block-enter panel border-t-2 border-t-ink p-3"
+                style={{ animationDelay: `${index * 80}ms` }}
               >
                 <p className="font-mono text-micro uppercase tracking-widest text-muted">{label}</p>
-                <p className="mt-2 font-display text-3xl tabular-nums">
-                  {value}
+                <p className="mt-2 font-body text-3xl tabular-nums">
+                  <ScrambleNumber value={Number(value)} delayMs={index * 80} />
                 </p>
               </div>
             ))}
           </div>
         )}
 
-        <PokemonFilters
-          filters={filters}
-          onChange={setFilters}
-        />
+        {summary?.generations?.length ? (
+          <details open className="accordion-smooth mb-4 border-b border-outline">
+            <summary className="cursor-pointer py-2.5 font-mono text-micro uppercase tracking-widest text-ink marker:text-accent">
+              Generation progress
+            </summary>
+            <div className="grid gap-x-6 gap-y-3 border-t border-outline p-3 sm:grid-cols-2 xl:grid-cols-3">
+              {summary.generations.map((generation, index) => (
+                <ProgressBar
+                  key={generation.generation}
+                  label={`Gen ${generation.generation}`}
+                  value={generation.obtained}
+                  max={generation.total}
+                  percentage={generation.obtainedPercent}
+                  color={generationColors[index % generationColors.length]}
+                  entranceDelay={index * 80}
+                />
+              ))}
+            </div>
+          </details>
+        ) : null}
 
-        <CollectionFilter
-          value={filters.collection ?? ""}
-          onChange={(collection) => {
-            setFilters((current) => ({
-              ...current,
-              collection,
-              page: 1,
-            }));
-          }}
-        />
+        <details className="accordion-smooth dex-filters group mb-4 border border-outline bg-surface">
+          <summary className="flex min-h-8 cursor-pointer list-none items-center gap-2 px-2.5 py-1.5 font-mono text-micro uppercase tracking-widest text-ink hover:bg-elevated focus-visible:-outline-offset-2 motion-safe:transition-colors pointer-coarse:min-h-11 [&::-webkit-details-marker]:hidden">
+            <SlidersHorizontal size={14} strokeWidth={1.5} aria-hidden="true" />
+            <span className="flex-1">Filters</span>
+            <ChevronDown size={14} strokeWidth={1.5} aria-hidden="true" className="group-open:rotate-180 motion-safe:transition-transform motion-safe:duration-200" />
+          </summary>
+          <div className="space-y-2 border-t border-outline p-2">
+            <PokemonFilters
+              filters={filters}
+              onChange={setFilters}
+            />
 
-        <div className="mb-5 flex items-center justify-between">
+            <CollectionFilter
+              value={filters.collection ?? ""}
+              onChange={(collection) => {
+                setFilters((current) => ({
+                  ...current,
+                  collection,
+                  page: 1,
+                }));
+              }}
+            />
+          </div>
+        </details>
+
+        <div className="mb-3 flex items-center justify-between border-b border-outline pb-2">
           <p className="font-body text-sm text-muted">
             {total} Pokémon entries
           </p>
-          <span className="font-mono text-micro uppercase tracking-widest text-gold">
+          <span className="font-mono text-micro uppercase tracking-widest text-ink">
             National Dex
           </span>
         </div>
 
-        {loading && (
-          <p className="py-12 text-center text-muted">
-            Loading Pokémon...
-          </p>
-        )}
+        {loading && <SystemLoading className="py-12" />}
 
         {error && (
-          <p role="alert" className="py-12 text-center text-red-400">
+          <p role="alert" className="py-12 text-center text-danger">
             {error}
           </p>
         )}
 
         {!loading && !error && (
           <>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-              {pokemon.map((entry) => (
+            <div
+              key={JSON.stringify(filters)}
+              className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+            >
+              {pokemon.map((entry, index) => (
                 <PokemonCard
                   key={entry.id}
                   pokemon={entry}
                   onClick={setSelectedId}
+                  entranceDelay={index * 24}
                   onQuickAdd={handleQuickAdd}
                   onQuickHunt={handleQuickHunt}
                 />
@@ -296,7 +264,7 @@ export default function NationalDexPage() {
                     page: page - 1,
                   }))
                 }
-                className="rounded-lg border border-border bg-surface px-4 py-2 font-body text-xs font-medium text-white hover:border-gold disabled:cursor-not-allowed disabled:opacity-40"
+                className="shape-angular border border-outline bg-surface px-4 py-2 font-body text-xs font-medium text-ink hover:border-ink disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Previous
               </Button>
@@ -314,7 +282,7 @@ export default function NationalDexPage() {
                     page: page + 1,
                   }))
                 }
-                className="rounded-lg border border-border bg-surface px-4 py-2 font-body text-xs font-medium text-white hover:border-gold disabled:cursor-not-allowed disabled:opacity-40"
+                className="shape-angular border border-outline bg-surface px-4 py-2 font-body text-xs font-medium text-ink hover:border-ink disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Next
               </Button>

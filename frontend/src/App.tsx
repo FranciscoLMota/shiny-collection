@@ -1,27 +1,29 @@
 
 import { Navigate, NavLink, Route, Routes } from "react-router-dom";
-import { Sparkles } from "lucide-react";
+import { GraphicMark } from "./components/GraphicMark";
+import ThemeTerminal from "./components/ThemeTerminal";
 import NationalDexPage from "./pages/NationalDexPage";
 import HuntBoardPage from "./pages/HuntBoardPage";
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-obsidian">
-      <nav className="sticky top-0 z-40 border-b border-border bg-obsidian/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-8 lg:px-12">
-          <span className="flex items-center gap-1.5 font-display text-xl font-semibold tracking-tight text-gold">
-            <Sparkles size={18} aria-hidden="true" />
-            Shiny Archive
+    <div className="flex min-h-screen flex-col bg-canvas">
+      <nav className="site-navigation sticky top-0 z-40 border-b border-outline bg-canvas">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-2 sm:px-8 lg:px-12">
+          <span className="flex items-center gap-1.5 font-display text-base font-bold uppercase tracking-[0.04em] text-ink">
+            <GraphicMark variant="solar" size={22} />
+            Shiny Phenotype Observation Network
           </span>
 
           <div className="flex gap-2">
             <NavLink
               to="/dex"
+              viewTransition
               className={({ isActive }) =>
-                `rounded-lg px-4 py-2 font-body text-xs font-medium ${
+                `btn border-transparent ${
                   isActive
-                    ? "bg-gold text-obsidian"
-                    : "text-muted hover:bg-surface hover:text-white"
+                    ? "bg-accent text-accent-ink"
+                    : "text-ink hover:bg-surface"
                 }`
               }
             >
@@ -30,11 +32,12 @@ export default function App() {
 
             <NavLink
               to="/hunts"
+              viewTransition
               className={({ isActive }) =>
-                `rounded-lg px-4 py-2 font-body text-xs font-medium ${
+                `btn border-transparent ${
                   isActive
-                    ? "bg-gold text-obsidian"
-                    : "text-muted hover:bg-surface hover:text-white"
+                    ? "bg-accent text-accent-ink"
+                    : "text-ink hover:bg-surface"
                 }`
               }
             >
@@ -44,12 +47,19 @@ export default function App() {
         </div>
       </nav>
 
-      <Routes>
-        <Route path="/" element={<Navigate to="/dex" replace />} />
-        <Route path="/dex" element={<NationalDexPage />} />
-        <Route path="/hunts" element={<HuntBoardPage />} />
-        <Route path="*" element={<Navigate to="/dex" replace />} />
-      </Routes>
+      <div className="route-transition-content flex flex-1 flex-col">
+        <Routes>
+          <Route path="/" element={<Navigate to="/dex" replace />} />
+          <Route path="/dex" element={<NationalDexPage />} />
+          <Route path="/hunts" element={<HuntBoardPage />} />
+          <Route path="*" element={<Navigate to="/dex" replace />} />
+        </Routes>
+      </div>
+      <footer className="mx-auto mt-auto flex w-full max-w-7xl items-center justify-between border-t border-outline px-4 py-3 text-muted sm:px-8 lg:px-12">
+        <GraphicMark variant="identifier" size={26} />
+        <GraphicMark variant="signal" size={26} />
+      </footer>
+      <ThemeTerminal />
     </div>
   );
 }

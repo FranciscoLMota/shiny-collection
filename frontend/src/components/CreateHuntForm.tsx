@@ -11,9 +11,7 @@ interface Props {
   onClose: () => void;
 }
 
-const fieldClass =
-  "w-full rounded-lg border border-border bg-obsidian " +
-  "px-3 py-2.5 font-body text-xs font-medium outline-none focus:border-gold";
+const fieldClass = "field";
 
 // Searches for a Pokémon and creates a hunt with its initial settings.
 export default function CreateHuntForm({
@@ -91,12 +89,12 @@ export default function CreateHuntForm({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bios-backdrop p-4">
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Create shiny hunt"
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-border bg-surface p-6"
+        className="max-h-[90vh] w-full max-w-lg overflow-y-auto modal-surface"
       >
         <div className="mb-6 flex items-center justify-between">
           <h2 className="font-display text-xl font-semibold">
@@ -106,7 +104,7 @@ export default function CreateHuntForm({
             variant="ghost"
             type="button"
             onClick={onClose}
-            className="min-h-0 border-0 bg-transparent p-0 font-body text-xs font-medium text-muted hover:bg-transparent hover:text-white"
+            className="min-h-0 border-0 bg-transparent p-0 font-body text-xs font-medium text-muted hover:bg-transparent hover:text-ink"
           >
             Close ✕
           </Button>
@@ -119,7 +117,7 @@ export default function CreateHuntForm({
             </label>
 
             {selected ? (
-              <div className="flex items-center justify-between rounded-lg border border-gold bg-obsidian p-3">
+              <div className="flex items-center justify-between shape-angular border border-ink bg-canvas p-3">
                 <span>{selected.displayName}</span>
                 <Button
                   variant="ghost"
@@ -129,7 +127,7 @@ export default function CreateHuntForm({
                     setSearch("");
                     setResults([]);
                   }}
-                  className="min-h-0 border-0 bg-transparent p-0 font-body text-xs font-medium text-gold hover:bg-transparent"
+                  className="min-h-0 border-0 bg-transparent p-0 font-body text-xs font-medium text-ink hover:bg-transparent"
                 >
                   Change
                 </Button>
@@ -147,7 +145,7 @@ export default function CreateHuntForm({
                 />
 
                 {search.trim() && (
-                  <div className="mt-2 max-h-48 overflow-y-auto rounded-lg border border-border bg-obsidian">
+                  <div className="mt-2 max-h-48 overflow-y-auto shape-angular border border-outline bg-canvas">
                     {results.map((pokemon) => (
                       <Button
                         key={pokemon.id}
@@ -157,7 +155,7 @@ export default function CreateHuntForm({
                           setSelected(pokemon);
                           setResults([]);
                         }}
-                        className="flex w-full items-center gap-3 border-b border-border p-2 text-left font-body text-xs font-medium text-white hover:bg-surface-hover"
+                        className="flex w-full items-center gap-3 border-b border-outline p-2 text-left font-body text-xs font-medium text-ink hover:bg-elevated"
                       >
                         <img
                           src={pokemon.spriteShiny ?? pokemon.spriteDefault ?? ""}
@@ -234,7 +232,7 @@ export default function CreateHuntForm({
           </div>
 
           {error && (
-            <p role="alert" className="font-body text-sm text-red-400">
+            <p role="alert" className="font-body text-sm text-danger">
               {error}
             </p>
           )}
@@ -243,7 +241,7 @@ export default function CreateHuntForm({
             variant="accent"
             type="submit"
             disabled={saving || !selected}
-            className="w-full rounded-lg bg-gold px-4 py-3 font-body text-xs font-medium text-obsidian disabled:opacity-40"
+            className="w-full"
           >
             {saving ? "Creating..." : "Create hunt"}
           </Button>

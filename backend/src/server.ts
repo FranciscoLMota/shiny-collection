@@ -26,7 +26,7 @@ app.get("/api/health", async (_req, res) => {
 
     res.json({
       status: "ok",
-      message: "Shiny Archive API is running",
+      message: "Shiny Phenotype Observation Network API is running",
       database: "connected",
       time: result.rows[0].database_time,
     });
@@ -42,7 +42,7 @@ app.get("/api/health", async (_req, res) => {
 });
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Shiny Archive API running on port ${PORT}`);
+  console.log(`Shiny Phenotype Observation Network API running on port ${PORT}`);
 });
 
 

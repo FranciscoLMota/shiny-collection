@@ -21,18 +21,18 @@ interface ConfirmModalProps {
 
 const variants = {
   danger: {
-    icon: "bg-red-500/10 text-red-400",
-    button: "bg-red-500 text-white hover:bg-red-400",
+    icon: "bg-danger/10 text-danger",
+    button: "danger",
   },
   warning: {
-    icon: "bg-gold/10 text-gold",
-    button: "bg-gold text-obsidian hover:bg-gold/90",
+    icon: "bg-accent/10 text-ink",
+    button: "accent",
   },
   default: {
-    icon: "bg-gold/10 text-gold",
-    button: "bg-gold text-obsidian hover:bg-gold/90",
+    icon: "bg-accent/10 text-ink",
+    button: "accent",
   },
-};
+} as const;
 
 // Shared confirmation dialog with focus, Escape-key, and backdrop handling.
 export default function ConfirmModal({
@@ -76,7 +76,7 @@ export default function ConfirmModal({
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+        className="absolute inset-0 bios-backdrop"
         onClick={() => {
           if (!loading) onCancel();
         }}
@@ -87,7 +87,7 @@ export default function ConfirmModal({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={descriptionId}
-        className="relative w-full max-w-md rounded-2xl border border-border bg-surface p-6 shadow-2xl"
+        className="relative w-full max-w-md modal-surface"
       >
         <Button
           variant="ghost"
@@ -95,24 +95,24 @@ export default function ConfirmModal({
           onClick={onCancel}
           disabled={loading}
           aria-label="Close dialog"
-          className="absolute right-5 top-5 min-h-0 border-0 bg-transparent p-0 text-muted transition-colors hover:bg-transparent hover:text-white disabled:opacity-40"
+          className="absolute right-5 top-4 min-h-0 border-0 bg-transparent p-0 text-muted transition-colors hover:bg-transparent hover:text-ink disabled:opacity-40"
         >
-          <X size={18} />
+          <X strokeWidth={1.5} size={18} />
         </Button>
 
         <div
-          className={`mb-5 flex h-12 w-12 items-center justify-center rounded-xl ${style.icon}`}
+          className={`mb-3 flex size-9 items-center justify-center ${style.icon}`}
         >
           {variant === "danger" ? (
-            <AlertTriangle size={22} />
+            <AlertTriangle strokeWidth={1.5} size={22} />
           ) : (
-            <CircleHelp size={22} />
+            <CircleHelp strokeWidth={1.5} size={22} />
           )}
         </div>
 
         <h2
           id={titleId}
-          className="font-display text-xl font-semibold text-white"
+          className="font-display text-xl font-semibold text-ink"
         >
           {title}
         </h2>
@@ -128,23 +128,23 @@ export default function ConfirmModal({
           <div className="mt-5">{children}</div>
         )}
 
-        <div className="mt-7 flex justify-end gap-3">
+        <div className="mt-4 flex flex-wrap justify-end gap-2">
           <Button
             variant="outline"
             ref={cancelRef}
             type="button"
             onClick={onCancel}
             disabled={loading}
-            className="rounded-lg border border-border bg-surface-hover px-5 py-2.5 font-body text-xs font-medium text-white transition-colors hover:border-muted disabled:opacity-40"
+            className="min-w-20"
           >
             {cancelLabel}
           </Button>
           <Button
-            variant={variant === "danger" ? "danger" : "accent"}
+            variant={style.button}
             type="button"
             onClick={onConfirm}
             disabled={loading}
-            className={`rounded-lg px-5 py-2.5 font-body text-xs font-medium transition-colors disabled:opacity-40 ${style.button}`}
+            className="min-w-20"
           >
             {loading ? "Processing..." : confirmLabel}
           </Button>

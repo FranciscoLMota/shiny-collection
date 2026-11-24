@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { Plus, Sparkles, X } from "lucide-react";
 import {
   addOwnedPokemon,
   updateOwnedPokemon,
@@ -9,10 +10,12 @@ import ConfirmModal from "./ConfirmModal";
 import type { OwnedPokemon } from "../types/pokemon";
 import { formatDateDDMMYYYY, parseDateDDMMYYYY } from "../utils/date";
 import Button from "./Button";
+import FigureLabel from "./FigureLabel";
 
 interface Props {
   dexEntryId: number;
   ownedPokemon: OwnedPokemon[];
+  shinyImage: string | null;
   onChanged: () => Promise<void>;
 }
 
@@ -20,6 +23,7 @@ interface Props {
 export default function PokemonCollection({
   dexEntryId,
   ownedPokemon,
+  shinyImage,
   onChanged,
 }: Props) {
   const [gameOrigin, setGameOrigin] = useState("");
@@ -77,40 +81,73 @@ export default function PokemonCollection({
   }
 
   return (
-    <section className="space-y-5 rounded-xl border border-border bg-obsidian p-5">
-      <div>
-        <h3 className="font-display text-xl font-semibold">
+    <section className="@container space-y-3 shape-organic border border-outline bg-canvas p-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <h3 className="font-display text-lg font-semibold">
           My collection
         </h3>
-        <p className="mt-1 font-body text-sm text-muted">
+        <p className="technical-label tabular-nums">
           {ownedPokemon.length} shiny specimen
           {ownedPokemon.length === 1 ? "" : "s"} recorded
         </p>
       </div>
 
       {error && (
-        <p role="alert" className="font-body text-sm text-red-400">
+        <p role="alert" className="font-body text-sm text-danger">
           {error}
         </p>
       )}
 
       {ownedPokemon.length > 0 && (
-        <div className="space-y-3">
-          {ownedPokemon.map((owned) => (
-            <div
-              key={owned.id}
-              className="rounded-lg border border-border bg-surface p-4"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="font-body text-sm font-medium">
-                    {owned.nickname || `Shiny #${owned.id}`}
-                  </p>
-                  <p className="mt-1 font-body text-xs text-muted">
-                    {owned.gameOrigin || "Unknown game"}
-                    {owned.obtainedAt &&
-                      ` · ${formatDateDDMMYYYY(owned.obtainedAt)}`}
-                  </p>
+        <ul className="divide-y divide-outline border border-outline bg-surface">
+          {ownedPokemon.map((owned) => {
+            const name = owned.nickname || `shiny specimen ${owned.id}`;
+
+            return (
+              <li key={owned.id} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 p-2">
+                <span className="grid size-10 place-items-center border border-outline bg-canvas" aria-hidden="true">
+                  {shinyImage ? (
+                    <img src={shinyImage} alt="" className="size-full object-contain [image-rendering:pixelated]" />
+                  ) : (
+                    <Sparkles size={16} strokeWidth={1.5} className="text-muted" />
+                  )}
+                </span>
+
+                <div className="min-w-0 space-y-0.5">
+                  {owned.nickname ? (
+                    <p className="wrap-anywhere font-display text-sm font-semibold">{owned.nickname}</p>
+                  ) : (
+                    <FigureLabel prefix="SPEC." number={owned.id} subject="Shiny" className="block" />
+                  )}
+                  <div className="flex flex-wrap items-baseline gap-x-2 font-mono text-micro text-muted">
+                    <span className="min-w-0 wrap-anywhere">{owned.gameOrigin || "Unknown game"}</span>
+                    {owned.obtainedAt ? (
+                      <time className="tabular-nums" dateTime={owned.obtainedAt.slice(0, 10)}>
+                        {formatDateDDMMYYYY(owned.obtainedAt)}
+                      </time>
+                    ) : (
+                      <span>Date unrecorded</span>
+                    )}
+                  </div>
+                  <label className="status min-h-5 cursor-pointer pointer-coarse:min-h-8">
+                    <input
+                      type="checkbox"
+                      checked={owned.isInHome}
+                      disabled={saving}
+                      aria-label={`Pokémon HOME storage for ${name}`}
+                      onChange={(event) => {
+                        void runAction(() =>
+                          updateOwnedPokemon(owned.id, {
+                            isInHome: event.target.checked,
+                          })
+                        );
+                      }}
+                      className="bios-checkbox"
+                    />
+                    <span className={owned.isInHome ? "text-success-text" : "text-muted"}>
+                      {owned.isInHome ? "In Pokémon HOME" : "Outside Pokémon HOME"}
+                    </span>
+                  </label>
                 </div>
 
                 <Button
@@ -118,95 +155,82 @@ export default function PokemonCollection({
                   type="button"
                   disabled={saving}
                   onClick={() => setPokemonToDelete(owned)}
-                  className="min-h-0 border-0 bg-transparent p-0 font-body text-xs font-medium text-red-400 hover:bg-transparent hover:text-red-300 disabled:opacity-50"
+                  aria-label={`Remove ${name}`}
+                  title="Remove shiny"
+                  className="btn-icon pointer-fine:size-[26px] pointer-fine:min-h-0"
                 >
-                  Remove
+                  <X size={14} strokeWidth={1.5} aria-hidden="true" />
                 </Button>
-              </div>
-
-              <label className="mt-4 flex items-center gap-3 font-body text-xs font-medium">
-                <input
-                  type="checkbox"
-                  checked={owned.isInHome}
-                  disabled={saving}
-                  onChange={(event) => {
-                    void runAction(() =>
-                      updateOwnedPokemon(owned.id, {
-                        isInHome: event.target.checked,
-                      })
-                    );
-                  }}
-                  className="accent-[#69a884]"
-                />
-                Deposited in Pokémon HOME
-              </label>
-            </div>
-          ))}
-        </div>
+              </li>
+            );
+          })}
+        </ul>
       )}
 
       <form
         onSubmit={handleAdd}
-        className="space-y-4 border-t border-border pt-5"
+        className="space-y-2 border-t border-outline pt-3"
       >
-        <h4 className="font-display text-xl font-semibold">
+        <h4 className="font-display text-base font-semibold">
           Add a shiny
         </h4>
 
-        <div>
-          <label htmlFor="game-origin" className="mb-2 block font-body text-xs font-medium text-muted">
-            Game of origin
-          </label>
-          <input
-            id="game-origin"
-            value={gameOrigin}
-            onChange={(event) => setGameOrigin(event.target.value)}
-            placeholder="e.g. Pokémon Scarlet"
-            className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 font-body text-xs font-medium outline-none focus:border-gold"
-          />
+        <div className="grid gap-2 @xs:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+          <div className="min-w-0">
+            <label htmlFor="game-origin" className="technical-label mb-1 block">
+              Game of origin
+            </label>
+            <input
+              id="game-origin"
+              value={gameOrigin}
+              onChange={(event) => setGameOrigin(event.target.value)}
+              placeholder="e.g. Pokémon Scarlet"
+              className="field"
+            />
+          </div>
+
+          <div className="min-w-0">
+            <label htmlFor="obtained-at" className="technical-label mb-1 block">
+              Date obtained
+            </label>
+            <input
+              id="obtained-at"
+              value={obtainedAt}
+              onChange={(event) => {
+                setObtainedAt(event.target.value);
+                if (dateError) setDateError(null);
+              }}
+              inputMode="numeric"
+              placeholder="DD/MM/YYYY"
+              maxLength={10}
+              className="field"
+              aria-invalid={dateError ? true : undefined}
+              aria-describedby={dateError ? "obtained-at-error" : undefined}
+            />
+            {dateError && (
+              <p id="obtained-at-error" role="alert" className="mt-1 font-body text-xs text-danger">
+                {dateError}
+              </p>
+            )}
+          </div>
         </div>
 
-        <div>
-          <label htmlFor="obtained-at" className="mb-2 block font-body text-xs font-medium text-muted">
-            Date obtained
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <label className="flex min-h-9 cursor-pointer items-center gap-2 font-body text-xs font-medium">
+            <input
+              type="checkbox"
+              checked={isInHome}
+              onChange={(event) => setIsInHome(event.target.checked)}
+              className="bios-checkbox"
+            />
+            In Pokémon HOME
           </label>
-          <input
-            id="obtained-at"
-            value={obtainedAt}
-            onChange={(event) => {
-              setObtainedAt(event.target.value);
-              if (dateError) setDateError(null);
-            }}
-            inputMode="numeric"
-            placeholder="DD/MM/YYYY"
-            maxLength={10}
-            className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 font-body text-xs font-medium outline-none focus:border-gold"
-          />
-          {dateError && (
-            <p role="alert" className="mt-2 font-body text-xs text-red-400">
-              {dateError}
-            </p>
-          )}
+
+          <Button variant="accent" type="submit" disabled={saving}>
+            <Plus size={14} strokeWidth={1.5} aria-hidden="true" />
+            {saving ? "Saving..." : "Add to collection"}
+          </Button>
         </div>
-
-        <label className="flex items-center gap-3 font-body text-xs font-medium">
-          <input
-            type="checkbox"
-            checked={isInHome}
-            onChange={(event) => setIsInHome(event.target.checked)}
-            className="accent-[#69a884]"
-          />
-          Already deposited in Pokémon HOME
-        </label>
-
-        <Button
-          variant="accent"
-          type="submit"
-          disabled={saving}
-          className="w-full rounded-lg bg-gold px-4 py-3 font-body text-xs font-medium text-obsidian transition-opacity hover:opacity-90 disabled:opacity-50"
-        >
-          {saving ? "Saving..." : "Add to collection"}
-        </Button>
       </form>
 
       <ConfirmModal
