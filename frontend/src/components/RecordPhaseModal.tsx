@@ -77,16 +77,16 @@ export default function RecordPhaseModal({
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bios-backdrop  p-4">
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Record shiny phase"
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-border bg-surface p-6"
+        className="max-h-[90vh] w-full max-w-lg overflow-y-auto modal-surface"
       >
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <p className="font-mono text-micro uppercase tracking-widest text-gold">
+            <p className="font-mono text-micro uppercase tracking-widest text-ink">
               Shiny found
             </p>
             <h2 className="mt-1 font-display text-xl font-semibold">
@@ -98,7 +98,7 @@ export default function RecordPhaseModal({
             type="button"
             onClick={onClose}
             disabled={saving}
-            className="min-h-0 border-0 bg-transparent p-0 font-body text-xs font-medium text-muted hover:bg-transparent hover:text-white"
+            className="min-h-0 border-0 bg-transparent p-0 font-body text-xs font-medium text-muted hover:bg-transparent hover:text-ink"
           >
             Close ✕
           </Button>
@@ -111,7 +111,7 @@ export default function RecordPhaseModal({
             </label>
 
             {selected ? (
-              <div className="flex items-center gap-3 rounded-lg border border-gold bg-obsidian p-3">
+              <div className="flex items-center gap-3 shape-angular border border-ink bg-canvas p-3">
                 <img
                   src={selected.spriteShiny ?? selected.artworkShiny ?? ""}
                   alt=""
@@ -128,7 +128,7 @@ export default function RecordPhaseModal({
                     setSearch("");
                     setResults([]);
                   }}
-                  className="min-h-0 border-0 bg-transparent p-0 font-body text-xs font-medium text-gold hover:bg-transparent"
+                  className="min-h-0 border-0 bg-transparent p-0 font-body text-xs font-medium text-ink hover:bg-transparent"
                 >
                   Change
                 </Button>
@@ -143,10 +143,10 @@ export default function RecordPhaseModal({
                     setResults([]);
                   }}
                   placeholder="Search by name or Dex number"
-                  className="w-full rounded-lg border border-border bg-obsidian px-3 py-3 font-body text-xs font-medium outline-none focus:border-gold"
+                  className="field"
                 />
                 {results.length > 0 && (
-                  <div className="mt-2 max-h-52 overflow-y-auto rounded-lg border border-border bg-obsidian">
+                  <div className="mt-2 max-h-52 overflow-y-auto shape-angular border border-outline bg-canvas">
                     {results.map((entry) => (
                       <Button
                         key={entry.id}
@@ -156,7 +156,7 @@ export default function RecordPhaseModal({
                           setSelected(entry);
                           setResults([]);
                         }}
-                        className="flex w-full items-center gap-3 border-b border-border p-2 text-left font-body text-xs font-medium text-white hover:bg-surface-hover"
+                        className="flex w-full items-center gap-3 border-b border-outline p-2 text-left font-body text-xs font-medium text-ink hover:bg-elevated"
                       >
                         <img
                           src={entry.spriteShiny ?? entry.spriteDefault ?? ""}
@@ -184,23 +184,23 @@ export default function RecordPhaseModal({
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
               placeholder="Where did you find it?"
-              className="w-full rounded-lg border border-border bg-obsidian px-3 py-2.5 font-body text-xs font-medium outline-none focus:border-gold"
+              className="field"
             />
           </div>
 
-          {error && <p role="alert" className="font-body text-sm text-red-400">{error}</p>}
+          {error && <p role="alert" className="font-body text-sm text-danger">{error}</p>}
 
           <Button
             variant="accent"
             type="submit"
             disabled={!selected || saving}
-            className="w-full rounded-lg bg-gold px-4 py-3 font-body text-xs font-medium text-obsidian disabled:opacity-40"
+            className="w-full"
           >
             {saving ? (
               "Recording..."
             ) : (
               <span className="inline-flex items-center justify-center gap-2">
-                <Sparkles size={16} aria-hidden="true" />
+                <Sparkles strokeWidth={1.5} size={16} aria-hidden="true" />
                 Record shiny phase
               </span>
             )}

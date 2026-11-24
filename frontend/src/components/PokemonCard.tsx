@@ -4,47 +4,21 @@ import type { CSSProperties, MouseEvent } from "react";
 import type { DexEntry } from "../types/pokemon";
 import { LocateFixed, Sparkles } from "lucide-react";
 import Button from "./Button";
+import { GraphicMark } from "./GraphicMark";
+import DexBarcode from "./DexBarcode";
+import FigureLabel from "./FigureLabel";
 
 interface PokemonCardProps {
   pokemon: DexEntry;
   onClick: (id: number) => void;
+  entranceDelay?: number;
   onQuickAdd?: (dexEntryId: number) => Promise<void>;
   onQuickHunt?: (dexEntryId: number) => Promise<void>;
 }
 
-const typeColors: Record<string, string> = {
-  normal: "bg-[#77776d]",
-  fire: "bg-[#c45b3c]",
-  water: "bg-[#487bb5]",
-  electric: "bg-[#b99b35]",
-  grass: "bg-[#4f9458]",
-  ice: "bg-[#5a9ea9]",
-  fighting: "bg-[#a85b45]",
-  poison: "bg-[#8553a0]",
-  ground: "bg-[#a17d4b]",
-  flying: "bg-[#718eb4]",
-  psychic: "bg-[#b85b85]",
-  bug: "bg-[#7d923b]",
-  rock: "bg-[#8d8063]",
-  ghost: "bg-[#675b93]",
-  dragon: "bg-[#6555a5]",
-  dark: "bg-[#55515a]",
-  steel: "bg-[#738b91]",
-  fairy: "bg-[#ae779f]",
-};
-
 function TypeBadge({ type }: { type: string }) {
-  return (
-    <span
-      className={`rounded-md px-2.5 py-1 font-body text-xs font-medium text-white ${
-        typeColors[type.toLowerCase()] ?? "bg-surface-hover"
-      }`}
-    >
-      {type}
-    </span>
-  );
+  return <span className="type-label">{type}</span>;
 }
-
 
 type CardStyle = CSSProperties & {
   "--pointer-x": string;
@@ -52,6 +26,15 @@ type CardStyle = CSSProperties & {
   "--rotate-x": string;
   "--rotate-y": string;
 };
+
+interface CardSparkle {
+  id: number;
+  left: number;
+  top: number;
+  size: number;
+  delay: number;
+  duration: number;
+}
 
 const defaultStyle: CardStyle = {
   "--pointer-x": "50%",
@@ -64,11 +47,13 @@ const defaultStyle: CardStyle = {
 export default function PokemonCard({
   pokemon,
   onClick,
+  entranceDelay = 0,
   onQuickAdd,
   onQuickHunt,
 }: PokemonCardProps) {
   const cardRef = useRef<HTMLElement>(null);
   const [isHovered, setIsHovered] = useState(false);
+  const [sparkles, setSparkles] = useState<CardSparkle[]>([]);
 
   const dexNumber = String(
     pokemon.species.nationalDexNumber
@@ -83,6 +68,22 @@ export default function PokemonCard({
   const [huntError, setHuntError] = useState<string | null>(null);
   const previousObtained = useRef(isObtained);
   const [shinyTransition, setShinyTransition] = useState(false);
+
+  function handleMouseEnter() {
+    setIsHovered(true);
+    if (!isObtained) return;
+
+    setSparkles(
+      Array.from({ length: 6 }, (_, id) => ({
+        id,
+        left: 8 + Math.random() * 84,
+        top: 8 + Math.random() * 84,
+        size: 12 + Math.round(Math.random() * 8),
+        delay: Math.round(Math.random() * 700),
+        duration: 900 + Math.round(Math.random() * 700),
+      }))
+    );
+  }
 
   useEffect(() => {
     if (!previousObtained.current && isObtained) {
@@ -115,8 +116,8 @@ export default function PokemonCard({
     const x = (event.clientX - rect.left) / rect.width;
     const y = (event.clientY - rect.top) / rect.height;
 
-    const rotateY = (x - 0.5) * 12;
-    const rotateX = (0.5 - y) * 12;
+    const rotateY = (x - 0.5) * 22;
+    const rotateX = (0.5 - y) * 22;
 
     card.style.setProperty("--pointer-x", `${x * 100}%`);
     card.style.setProperty("--pointer-y", `${y * 100}%`);
@@ -178,21 +179,23 @@ export default function PokemonCard({
   }
 
   return (
-    <div className="group relative [perspective:1000px]">
+    <div
+      className="pokemon-card-enter group relative [perspective:1000px]"
+      style={{ animationDelay: `${entranceDelay}ms` }}
+    >
       <article
         ref={cardRef}
         onClick={() => onClick(pokemon.id)}
-        onMouseEnter={() => setIsHovered(true)}
+        onMouseEnter={handleMouseEnter}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
         style={defaultStyle}
         className={`
-          pokemon-tilt-card relative isolate h-full overflow-hidden
-          rounded-xl border p-4
+          pokemon-tilt-card specimen-card isolate flex h-full cursor-pointer flex-col
           ${shinyTransition ? "pokemon-shiny-transition" : ""}
           ${isObtained
-            ? "border-zinc-100 bg-zinc-700"
-            : "border-border bg-surface"
+            ? "specimen-recorded"
+            : ""
           }
         `}
       >
@@ -203,16 +206,38 @@ export default function PokemonCard({
           </>
         )}
 
-        <div className="flex items-center justify-between text-muted">
+        {isObtained && isHovered && (
+          <div
+            aria-hidden="true"
+            className="pokemon-sparkle-layer pointer-events-none absolute inset-0 z-10"
+          >
+            {sparkles.map((sparkle) => (
+              <span
+                key={sparkle.id}
+                className="pokemon-sparkle absolute"
+                style={{
+                  left: `${sparkle.left}%`,
+                  top: `${sparkle.top}%`,
+                  width: `${sparkle.size}px`,
+                  height: `${sparkle.size}px`,
+                  animationDelay: `${sparkle.delay}ms`,
+                  animationDuration: `${sparkle.duration}ms`,
+                }}
+              />
+            ))}
+          </div>
+        )}
+
+        <div className="relative flex flex-wrap items-center justify-between gap-1 text-muted">
           <span className="font-mono text-micro uppercase tracking-widest">#{dexNumber}</span>
           {pokemon.region && (
-            <span className="font-mono text-micro uppercase tracking-widest text-gold">
+            <span className="font-mono text-micro uppercase tracking-widest text-ink">
               {pokemon.region}
             </span>
           )}
           <div className="pt-1">
             {isObtained ? (
-              <Sparkles size={16} color="#ffffff" aria-hidden="true" />
+              <span className="status text-ink"><Sparkles size={12} strokeWidth={1.5} aria-hidden="true" /></span>
             ) : (
               <>
                 <div className="flex items-center gap-2">
@@ -221,21 +246,14 @@ export default function PokemonCard({
                     type="button"
                     disabled={isAdding || !onQuickAdd}
                     onClick={handleQuickAdd}
-                    className="
-            flex min-w-0 flex-1 items-center justify-center gap-2
-            rounded-lg border border-gold/40
-            bg-gold/10 px-3 py-2
-            font-body text-xs font-medium text-gold
-            transition-all duration-200
-            hover:border-gold hover:bg-gold hover:text-obsidian
-            disabled:cursor-not-allowed disabled:opacity-50
-          "
+                    aria-label={`Add ${pokemon.displayName} to collection`}
+                    className={isAdding ? "" : "btn-icon"}
                   >
                     {isAdding ? "Adding..." : <span className="text-base leading-none">+</span>}
                   </Button>
                   {onQuickHunt && (
                     <Button
-                      variant="ghost"
+                      variant="icon"
                       type="button"
                       disabled={isCreatingHunt || huntCreated}
                       onClick={handleQuickHunt}
@@ -253,19 +271,18 @@ export default function PokemonCard({
                             ? "Creating hunt..."
                             : "Add hunt"
                       }
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-success/40 bg-success/10 text-success transition-colors hover:border-success hover:bg-success/20 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      <LocateFixed size={16} aria-hidden="true" />
+                      <LocateFixed size={16} strokeWidth={1.5} aria-hidden="true" />
                     </Button>
                   )}
                 </div>
                 {addError && (
-                  <p role="alert" className="mt-2 font-body text-xs text-red-400">
+                  <p role="alert" className="mt-2 font-body text-xs text-danger">
                     {addError}
                   </p>
                 )}
                 {huntError && (
-                  <p role="alert" className="mt-2 font-body text-xs text-red-400">
+                  <p role="alert" className="mt-2 font-body text-xs text-danger">
                     {huntError}
                   </p>
                 )}
@@ -274,17 +291,23 @@ export default function PokemonCard({
           </div>
         </div>
 
-        <div className="flex h-36 items-center justify-center">
+        <div className="orbital-frame relative my-3 flex h-28 items-center justify-center">
+          <GraphicMark variant="target" className="orbital-target" />
+          <FigureLabel
+            number={3}
+            subject="Dex"
+            className="absolute right-1 bottom-1 z-10 bg-canvas/80 px-1 py-0.5 text-ink"
+          />
           {image ? (
             <img
               src={image}
               alt={`${isObtained ? "Shiny " : ""}${pokemon.displayName}`}
               loading="lazy"
               className={`
-                  h-28 w-28 object-contain
+                  relative h-24 w-24 object-contain
                   [image-rendering:pixelated]
-                  transition-transform duration-300
-                  ${isHovered ? "scale-110" : ""}
+                  transition-transform duration-200 motion-reduce:transition-none
+                  ${isHovered ? "motion-safe:scale-105" : ""}
                 `}
             />
           ) : (
@@ -293,20 +316,27 @@ export default function PokemonCard({
             </span>
           )}
         </div>
-        <h3 className="mb-3 flex min-w-0 items-center gap-2 font-display text-base font-semibold">
-          <span className="truncate">{pokemon.displayName}</span>
+        <h3 className="mb-2 flex min-w-0 items-center justify-between gap-2 font-display text-base font-semibold">
+          <button type="button" className="min-w-0 flex-1 truncate text-left">
+            {pokemon.displayName}
+          </button>
           {isObtained && (
-            <span className="shrink-0 font-body text-xs font-medium text-gold">
+            <span className="shrink-0 text-right font-mono text-sm font-semibold tabular-nums text-ink">
               x{Math.max(collection?.ownedCount ?? 0, 1)}
             </span>
           )}
         </h3>
 
-        <div className="flex flex-wrap gap-1.5">
-          <TypeBadge type={pokemon.primaryType} />
-          {pokemon.secondaryType && (
-            <TypeBadge type={pokemon.secondaryType} />
-          )}
+        <div className="relative mt-auto flex items-end justify-between gap-1.5">
+          <div className="flex flex-wrap gap-1.5">
+            <TypeBadge type={pokemon.primaryType} />
+            {pokemon.secondaryType && (
+              <TypeBadge type={pokemon.secondaryType} />
+            )}
+          </div>
+          <DexBarcode
+            nationalDexNumber={pokemon.species.nationalDexNumber}
+          />
         </div>
 
       </article>

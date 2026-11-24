@@ -6,7 +6,8 @@ type ButtonVariant =
   | "accent"
   | "outline"
   | "ghost"
-  | "danger";
+  | "danger"
+  | "icon";
 
 interface ButtonProps
   extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -19,6 +20,7 @@ const variants: Record<ButtonVariant, string> = {
   outline: "btn-outline",
   ghost: "btn-ghost",
   danger: "btn-danger",
+  icon: "btn-outline btn-icon",
 };
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(

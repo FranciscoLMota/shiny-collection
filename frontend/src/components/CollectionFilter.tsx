@@ -28,12 +28,12 @@ export default function CollectionFilter({
   onChange,
 }: CollectionFilterProps) {
   return (
-    <div className="mb-6">
-      <p className="mb-3 font-mono text-micro uppercase tracking-widest text-muted">
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-outline pt-2">
+      <p className="technical-label">
         Collection status
       </p>
 
-      <div className="flex flex-wrap gap-2">
+      <div role="group" aria-label="Collection status" className="flex flex-wrap gap-1">
         {options.map((option) => {
           const active = value === option.value;
 
@@ -41,19 +41,10 @@ export default function CollectionFilter({
             <Button
               key={option.value}
               type="button"
-              variant={active ? "accent" : "outline"}
+              variant="ghost"
               onClick={() => onChange(option.value)}
               aria-pressed={active}
-              className={`
-                rounded-lg border px-4 py-2.5
-                font-body text-xs font-medium
-                transition-all duration-200
-                ${
-                  active
-                    ? "border-gold bg-gold text-obsidian"
-                    : "border-border bg-surface text-muted hover:border-gold/60 hover:text-white"
-                }
-              `}
+              className="filter-option"
             >
               {option.label}
             </Button>

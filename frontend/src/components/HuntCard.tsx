@@ -14,22 +14,30 @@ import { getHuntPhases } from "../services/huntPhases";
 import type { HuntPhase } from "../types/huntPhases";
 import ConfirmModal from "./ConfirmModal";
 import Button from "./Button";
+import { GraphicMark } from "./GraphicMark";
+import DexBarcode from "./DexBarcode";
+import FigureLabel from "./FigureLabel";
 
 
 interface Props {
   hunt: Hunt;
+  entranceDelay?: number;
   onChanged: () => Promise<void>;
 }
 
 const statusStyles: Record<HuntStatus, string> = {
-  PLANNED: "text-muted border-border",
-  ACTIVE: "text-success border-success/40",
-  PAUSED: "text-gold border-gold/40",
-  COMPLETED: "text-blue-400 border-blue-400/40",
+  PLANNED: "text-muted border-outline",
+  ACTIVE: "text-success-text border-success/40",
+  PAUSED: "text-ink border-ink/40",
+  COMPLETED: "text-success-text border-success",
 };
 
 // Displays a hunt, its encounter controls, and its phase history.
-export default function HuntCard({ hunt, onChanged }: Props) {
+export default function HuntCard({
+  hunt,
+  entranceDelay = 0,
+  onChanged,
+}: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const cardRef = useRef<HTMLElement>(null);
@@ -147,7 +155,9 @@ export default function HuntCard({ hunt, onChanged }: Props) {
           size: 1,
           velocity: 220,
           fade: true,
-          color: ["#c5a46d", "#ffffff", "#69a884", "#60a5fa", "#f472b6"],
+          color: ["accent", "solar", "sky", "success"].map((token) =>
+            getComputedStyle(cardRef.current ?? document.documentElement).getPropertyValue(`--bios-${token}`).trim()
+          ),
         });
         await new Promise((resolve) =>
           window.setTimeout(resolve, 850)
@@ -169,8 +179,9 @@ export default function HuntCard({ hunt, onChanged }: Props) {
   return (
     <article
       ref={cardRef}
+      style={{ animationDelay: `${entranceDelay}ms` }}
       className={`
-        relative isolate overflow-hidden rounded-xl border border-border bg-surface p-5
+        data-block-enter specimen-card isolate
         ${shinyTransition ? "hunt-shiny-transition" : ""}
       `}
     >
@@ -181,8 +192,9 @@ export default function HuntCard({ hunt, onChanged }: Props) {
         <div className="flex items-center gap-2">
           {hunt.status === "COMPLETED" ? (
             <span
-              className={`rounded-md border px-2.5 py-1 font-body text-xs font-medium ${statusStyles[hunt.status]}`}
+              className={`status border px-2 py-1 ${statusStyles[hunt.status]}`}
             >
+              <span className="size-1.5 bg-current" aria-hidden="true" />
               {hunt.status}
             </span>
           ) : (
@@ -190,6 +202,7 @@ export default function HuntCard({ hunt, onChanged }: Props) {
               variant={hunt.status === "ACTIVE" ? "outline" : "accent"}
               type="button"
               disabled={busy}
+              className="pointer-fine:h-[26px] pointer-fine:min-h-0 pointer-fine:py-0"
               onClick={() =>
                 void perform(() =>
                   updateHunt(hunt.id, {
@@ -197,11 +210,6 @@ export default function HuntCard({ hunt, onChanged }: Props) {
                   })
                 )
               }
-              className={`rounded-md border px-3 py-1.5 font-body text-xs font-medium transition-colors disabled:opacity-50 ${
-                hunt.status === "ACTIVE"
-                  ? "border-gold/40 bg-gold/10 text-gold hover:bg-gold/20"
-                  : "border-success/40 bg-success/10 text-success hover:bg-success/20"
-              }`}
             >
               {hunt.status === "ACTIVE" ? "Stop" : "Start"}
             </Button>
@@ -213,7 +221,7 @@ export default function HuntCard({ hunt, onChanged }: Props) {
             onClick={() => setShowDeleteModal(true)}
             aria-label={`Delete ${pokemon.displayName} hunt`}
             title="Delete hunt"
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-red-400/40 font-body text-xs font-medium text-red-400 transition-colors hover:border-red-400 hover:bg-red-400/10 disabled:opacity-50"
+            className="btn-icon pointer-fine:size-[26px] pointer-fine:min-h-0"
           >
             ×
           </Button>
@@ -221,32 +229,43 @@ export default function HuntCard({ hunt, onChanged }: Props) {
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="flex h-28 w-28 shrink-0 items-center justify-center rounded-lg bg-obsidian">
+        <div className="orbital-frame relative flex size-24 shrink-0 items-center justify-center">
+          <GraphicMark variant="target" className="orbital-target" />
+          <FigureLabel
+            number={4}
+            subject="Hunt"
+            className="absolute right-1 bottom-1 z-10 bg-canvas/80 px-1 py-0.5 text-ink"
+          />
           {sprite ? (
             <img
               src={sprite}
               alt={`Shiny ${pokemon.displayName}`}
-              className="h-24 w-24 object-contain [image-rendering:pixelated]"
+              className="relative size-20 object-contain [image-rendering:pixelated]"
             />
           ) : (
             <span className="text-muted">?</span>
           )}
         </div>
 
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <h3 className="truncate font-display text-base font-semibold">
             {pokemon.displayName}
           </h3>
           <p className="mt-1 font-body text-sm text-muted">
             {hunt.game || "Game not specified"}
           </p>
-          <p className="mt-1 font-body text-xs text-muted">
-            {hunt.method || "Method not specified"}
-          </p>
+          <div className="mt-1 flex items-end justify-between gap-2">
+            <p className="font-body text-xs text-muted">
+              {hunt.method || "Method not specified"}
+            </p>
+            <DexBarcode
+              nationalDexNumber={pokemon.species.nationalDexNumber}
+            />
+          </div>
         </div>
       </div>
 
-      <div className="my-6 rounded-lg border border-border bg-obsidian p-4">
+      <div className="my-4 border-y border-outline bg-canvas p-3">
         <div className="grid grid-cols-2 gap-4">
           <div className="text-left">
             <p className="font-mono text-micro uppercase tracking-widest text-muted">
@@ -275,7 +294,7 @@ export default function HuntCard({ hunt, onChanged }: Props) {
                   }
                 }}
                 aria-label="Encounter count"
-                className="mt-2 w-full bg-transparent font-display text-3xl tabular-nums outline-none focus:text-gold disabled:cursor-not-allowed"
+                className="mt-2 w-full bg-transparent font-display text-3xl tabular-nums focus:text-ink disabled:cursor-not-allowed"
               />
             )}
           </div>
@@ -308,7 +327,7 @@ export default function HuntCard({ hunt, onChanged }: Props) {
                   void perform(() => addEncounters(hunt.id, -amount));
                 }
               }}
-              className="rounded-lg border border-border bg-surface px-3 py-2 font-body text-xs font-medium text-white hover:border-gold hover:text-gold disabled:cursor-not-allowed disabled:opacity-30"
+              className="shape-angular border border-outline bg-surface px-3 py-2 font-body text-xs font-medium text-ink hover:border-ink hover:text-ink disabled:cursor-not-allowed disabled:opacity-30"
             >
               −
             </Button>
@@ -322,7 +341,7 @@ export default function HuntCard({ hunt, onChanged }: Props) {
               disabled={busy || hunt.status !== "ACTIVE"}
               onChange={(event) => setEncounterStep(event.target.value)}
               aria-label="Encounter adjustment value"
-              className="min-w-0 rounded-lg border border-border bg-surface px-2 py-2 text-center font-body text-xs font-medium outline-none focus:border-gold disabled:opacity-30"
+              className="field min-w-0 px-1 text-center disabled:opacity-30"
             />
 
             <Button
@@ -341,7 +360,7 @@ export default function HuntCard({ hunt, onChanged }: Props) {
                   void perform(() => addEncounters(hunt.id, amount));
                 }
               }}
-              className="rounded-lg border border-border bg-surface px-3 py-2 font-body text-xs font-medium text-white hover:border-gold hover:text-gold disabled:cursor-not-allowed disabled:opacity-30"
+              className="shape-angular border border-outline bg-surface px-3 py-2 font-body text-xs font-medium text-ink hover:border-ink hover:text-ink disabled:cursor-not-allowed disabled:opacity-30"
             >
               + 
             </Button>
@@ -349,13 +368,13 @@ export default function HuntCard({ hunt, onChanged }: Props) {
         )}
 
         {phaseError && (
-          <p role="alert" className="mt-3 font-body text-xs text-red-400">
+          <p role="alert" className="mt-3 font-body text-xs text-danger">
             {phaseError}
           </p>
         )}
 
         {phases.length > 0 && (
-          <div className="mt-5 border-t border-border pt-4">
+          <div className="mt-5 border-t border-outline pt-4">
             <p className="mb-3 font-mono text-micro uppercase tracking-widest text-muted">
               Phase history
             </p>
@@ -380,7 +399,7 @@ export default function HuntCard({ hunt, onChanged }: Props) {
                     </p>
                   </div>
                   {phase.ownedPokemonId && (
-                    <span className="font-body text-xs font-medium text-success">Collected</span>
+                    <span className="font-body text-xs font-medium text-success-text">Collected</span>
                   )}
                 </div>
               ))}
@@ -399,10 +418,10 @@ export default function HuntCard({ hunt, onChanged }: Props) {
               type="button"
               disabled={busy}
               onClick={() => setShowPhaseModal(true)}
-              className="col-span-1 rounded-lg border border-gold/50 bg-gold/10 px-2 py-2.5 font-body text-xs font-medium text-gold hover:bg-gold/20 disabled:opacity-40"
+              className="col-span-1 shape-angular border border-ink/50 bg-accent/10 px-2 py-2.5 font-body text-xs font-medium text-ink hover:bg-accent/20 disabled:opacity-40"
             >
               <span className="flex items-center justify-center gap-1">
-                <Sparkles size={14} aria-hidden="true" />
+                <Sparkles strokeWidth={1.5} size={14} aria-hidden="true" />
                 Phase
               </span>
             </Button>
@@ -417,10 +436,10 @@ export default function HuntCard({ hunt, onChanged }: Props) {
                 true
               )
             }
-            className={`${hunt.status === "ACTIVE" ? "col-span-3" : "col-span-4"} rounded-lg bg-gold px-4 py-2.5 font-body text-xs font-medium text-obsidian hover:opacity-90 disabled:opacity-50`}
+            className={`${hunt.status === "ACTIVE" ? "col-span-3" : "col-span-4"} shape-angular bg-accent px-4 py-2.5 font-body text-xs font-medium text-accent-ink hover:opacity-90 disabled:opacity-50`}
           >
             <span className="flex items-center justify-center gap-2">
-              <Sparkles size={16} aria-hidden="true" />
+              <Sparkles strokeWidth={1.5} size={16} aria-hidden="true" />
               Complete hunt
             </span>
           </Button>
@@ -428,7 +447,7 @@ export default function HuntCard({ hunt, onChanged }: Props) {
       )}
 
       {hunt.status === "COMPLETED" && (
-        <p className="rounded-lg border border-success/30 bg-success/10 p-3 text-center font-body text-sm text-success">
+        <p className="shape-angular border border-success/30 bg-success/10 p-3 text-center font-body text-sm text-success-text">
           Hunt completed!
         </p>
       )}
@@ -438,7 +457,7 @@ export default function HuntCard({ hunt, onChanged }: Props) {
       )}
 
       {error && (
-        <p role="alert" className="mt-3 font-body text-sm text-red-400">
+        <p role="alert" className="mt-3 font-body text-sm text-danger">
           {error}
         </p>
       )}

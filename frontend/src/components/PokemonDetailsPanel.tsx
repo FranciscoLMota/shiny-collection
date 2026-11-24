@@ -1,10 +1,15 @@
 
-import { useEffect, useState } from "react";
-import { Sparkles } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import { Sparkles, X } from "lucide-react";
 import { getPokemonById } from "../services/pokemon";
 import type { DexEntry } from "../types/pokemon";
 import PokemonCollection from "./PokemonCollection";
 import Button from "./Button";
+import { GraphicMark } from "./GraphicMark";
+import SystemLoading from "./SystemLoading";
+import { delayForDevLoadingPreview } from "../utils/devLoadingPreview";
+import FigureLabel from "./FigureLabel";
 
 interface Props {
   pokemonId: number | null;
@@ -12,7 +17,7 @@ interface Props {
   onCollectionChanged: () => void;
 }
 
-// Formats API ability keys into readable names.
+// Formats API keys into readable labels.
 function formatName(value: string) {
   return value
     .split("-")
@@ -29,12 +34,13 @@ function PokemonImage({
   alt: string;
 }) {
   return (
-    <div className="flex aspect-square items-center justify-center rounded-xl border border-border bg-obsidian p-4">
+    <div className="orbital-frame relative flex aspect-square items-center justify-center border border-outline bg-canvas p-4">
+      <GraphicMark variant="target" className="orbital-target" />
       {src ? (
         <img
           src={src}
           alt={alt}
-          className="h-full w-full object-contain"
+          className="relative size-full object-contain"
         />
       ) : (
         <span className="font-body text-sm text-muted">
@@ -55,6 +61,18 @@ export default function PokemonDetailsPanel({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [isClosing, setIsClosing] = useState(false);
+
+  const closePanel = useCallback(() => {
+    if (isClosing) return;
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      onClose();
+      return;
+    }
+
+    setIsClosing(true);
+  }, [isClosing, onClose]);
 
   async function refreshCollection() {
     setRefreshKey((value) => value + 1);
@@ -77,6 +95,7 @@ export default function PokemonDetailsPanel({
           selectedPokemonId,
           controller.signal
         );
+        await delayForDevLoadingPreview(controller.signal);
         if (!controller.signal.aborted) {
           setPokemon(result.data);
         }
@@ -99,199 +118,164 @@ export default function PokemonDetailsPanel({
     if (pokemonId === null) return;
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") closePanel();
     }
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [pokemonId, onClose]);
+  }, [pokemonId, closePanel]);
 
   if (pokemonId === null) return null;
 
-  const stats = pokemon
-    ? [
-        ["HP", pokemon.hp],
-        ["Attack", pokemon.attack],
-        ["Defense", pokemon.defense],
-        ["Sp. Attack", pokemon.specialAttack],
-        ["Sp. Defense", pokemon.specialDefense],
-        ["Speed", pokemon.speed],
-      ] as const
-    : [];
-
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50">
-      <Button
-        variant="ghost"
+      <button
         type="button"
         aria-label="Close Pokémon details"
-        onClick={onClose}
-        className="absolute inset-0 min-h-0 w-full border-0 bg-black/75 p-0 hover:bg-black/75"
+        onClick={closePanel}
+        className={`bios-backdrop absolute inset-0 w-full border-0 p-0 ${
+          isClosing ? "dex-panel-backdrop-exit" : "dex-panel-backdrop"
+        }`}
       />
 
       <aside
         role="dialog"
         aria-modal="true"
         aria-label="Pokémon details"
-        className="absolute inset-y-0 right-0 w-full max-w-xl overflow-y-auto border-l border-border bg-surface p-5 shadow-2xl sm:p-8"
+        className={`dex-details-panel absolute inset-y-0 right-0 w-full max-w-xl overflow-y-auto overscroll-contain border-l border-outline bg-elevated p-4 sm:p-6 ${
+          isClosing ? "dex-panel-exit" : "dex-panel-enter"
+        }`}
+        onAnimationEnd={(event) => {
+          if (
+            event.target !== event.currentTarget ||
+            event.animationName !== "dex-panel-exit"
+          ) {
+            return;
+          }
+
+          setIsClosing(false);
+          onClose();
+        }}
       >
-        <div className="mb-7 flex items-center justify-between">
-          <span className="font-mono text-micro uppercase tracking-widest text-gold">
-            Pokédex entry
-          </span>
+        <header className="mb-4">
+          {pokemon && (
+            <p className="font-mono text-micro uppercase tracking-widest text-ink">
+              #{String(pokemon.species.nationalDexNumber).padStart(4, "0")}
+            </p>
+          )}
+          <div className="mt-1 flex items-center justify-between gap-3">
+            <h2 className="min-w-0 font-display text-2xl font-bold uppercase leading-tight tracking-tight wrap-anywhere">
+              {pokemon?.displayName ?? "Pokédex entry"}
+            </h2>
+            <Button variant="icon" type="button" onClick={closePanel} aria-label="Close Pokémon details">
+              <X size={16} strokeWidth={1.5} aria-hidden="true" />
+            </Button>
+          </div>
+          {pokemon && (
+            <p className="mt-2 font-body text-sm text-muted">
+              {pokemon.species.genus ?? "Pokémon"}
+              {" · "}
+              Generation {pokemon.species.generation}
+            </p>
+          )}
+        </header>
 
-          <Button
-            variant="outline"
-            type="button"
-            onClick={onClose}
-            className="rounded-lg border border-border px-3 py-2 font-body text-xs font-medium text-muted hover:text-white"
-          >
-            Close ✕
-          </Button>
-        </div>
-
-        {loading && <p className="text-muted">Loading details...</p>}
-        {error && <p role="alert" className="text-red-400">{error}</p>}
+        {loading && <SystemLoading className="py-8" />}
+        {error && <p role="alert" className="text-danger">{error}</p>}
 
         {pokemon && (
-          <div className="space-y-7">
-            <header>
-              <p className="font-mono text-micro uppercase tracking-widest text-gold">
-                #{String(pokemon.species.nationalDexNumber).padStart(4, "0")}
-              </p>
-              <h2 className="mt-1 font-display text-4xl font-medium tracking-tighter">
-                {pokemon.displayName}
-              </h2>
-              <p className="mt-2 font-body text-sm text-muted">
-                {pokemon.species.genus ?? "Pokémon"}
-                {" · "}
-                Generation {pokemon.species.generation}
-              </p>
-            </header>
-
+          <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <PokemonImage
                   src={pokemon.artworkDefault ?? pokemon.spriteDefault}
                   alt={pokemon.displayName}
                 />
-                <p className="mt-2 text-center font-body text-xs text-muted">
-                  Regular
-                </p>
+                <FigureLabel
+                  number={1}
+                  subject="Regular"
+                  className="mt-2 block text-center"
+                />
               </div>
               <div>
                 <PokemonImage
                   src={pokemon.artworkShiny ?? pokemon.spriteShiny}
                   alt={`Shiny ${pokemon.displayName}`}
                 />
-                <p className="mt-2 flex items-center justify-center gap-1 text-center font-body text-xs text-gold">
-                  Shiny <Sparkles size={12} aria-hidden="true" />
-                </p>
+                <div className="mt-2 flex items-center justify-center gap-1">
+                  <FigureLabel number={2} subject="Shiny" />
+                  <Sparkles
+                    strokeWidth={1.5}
+                    size={12}
+                    aria-hidden="true"
+                    className="text-ink"
+                  />
+                </div>
               </div>
             </div>
 
-            <section>
-              <h3 className="mb-3 font-display text-xl font-semibold">
-                Pokédex information
-              </h3>
-              <p className="font-body text-sm leading-7 text-muted">
-                {pokemon.species.description ??
-                  "No Pokédex description available."}
-              </p>
-            </section>
-
-            <div className="grid grid-cols-2 gap-3 font-body text-sm">
-              <div className="rounded-lg border border-border p-4">
-                <p className="mb-1 font-mono text-micro uppercase tracking-widest text-muted">Type</p>
-                <p className="capitalize">
-                  {[pokemon.primaryType, pokemon.secondaryType]
-                    .filter(Boolean)
-                    .join(" / ")}
-                </p>
-              </div>
-
-              <div className="rounded-lg border border-border p-4">
-                <p className="mb-1 font-mono text-micro uppercase tracking-widest text-muted">Region</p>
-                <p className="capitalize">
-                  {pokemon.region ?? "Standard"}
-                </p>
-              </div>
-
-              <div className="rounded-lg border border-border p-4">
-                <p className="mb-1 font-mono text-micro uppercase tracking-widest text-muted">Height</p>
-                <p>
-                  {pokemon.height === null
-                    ? "Unknown"
-                    : `${(pokemon.height / 10).toFixed(1)} m`}
-                </p>
-              </div>
-
-              <div className="rounded-lg border border-border p-4">
-                <p className="mb-1 font-mono text-micro uppercase tracking-widest text-muted">Weight</p>
-                <p>
-                  {pokemon.weight === null
-                    ? "Unknown"
-                    : `${(pokemon.weight / 10).toFixed(1)} kg`}
-                </p>
-              </div>
-            </div>
-
-            <section>
-              <h3 className="mb-3 font-display text-xl font-semibold">
-                Abilities
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {pokemon.abilities.map((ability) => (
-                  <span
-                    key={ability}
-                    className="rounded-md bg-obsidian px-3 py-2 font-body text-sm"
+            <details className="accordion-smooth border-b border-outline">
+              <summary className="cursor-pointer py-2.5 font-mono text-micro uppercase tracking-widest text-ink marker:text-accent">
+                More info
+              </summary>
+              <dl className="border-t border-outline py-1">
+                {[
+                  {
+                    label: "Type",
+                    value: [pokemon.primaryType, pokemon.secondaryType]
+                      .filter((type): type is string => Boolean(type))
+                      .map(formatName)
+                      .join("/"),
+                  },
+                  {
+                    label: "Region",
+                    value: formatName(pokemon.region ?? "standard"),
+                  },
+                  {
+                    label: "Height",
+                    value: pokemon.height === null
+                      ? "Unknown"
+                      : `${(pokemon.height / 10).toFixed(1)} m`,
+                  },
+                  {
+                    label: "Weight",
+                    value: pokemon.weight === null
+                      ? "Unknown"
+                      : `${(pokemon.weight / 10).toFixed(1)} kg`,
+                  },
+                ].map(({ label, value }) => (
+                  <div
+                    key={label}
+                    className="flex items-baseline gap-2 py-1.5"
                   >
-                    {formatName(ability)}
-                  </span>
-                ))}
-                {pokemon.hiddenAbility && (
-                  <span className="rounded-md border border-gold/40 px-3 py-2 font-body text-sm text-gold">
-                    {formatName(pokemon.hiddenAbility)} · Hidden
-                  </span>
-                )}
-              </div>
-            </section>
-
-            <section>
-              <h3 className="mb-4 font-display text-xl font-semibold">
-                Base stats
-              </h3>
-              <div className="space-y-3">
-                {stats.map(([name, value]) => (
-                  <div key={name}>
-                    <div className="mb-1 flex justify-between font-body text-xs">
-                      <span className="text-muted">{name}</span>
-                      <span>{value ?? "—"}</span>
-                    </div>
-                    <div className="h-1.5 overflow-hidden rounded-full bg-obsidian">
-                      <div
-                        className="h-full rounded-full bg-gold"
-                        style={{
-                          width: `${Math.min(
-                            100,
-                            ((value ?? 0) / 255) * 100
-                          )}%`,
-                        }}
-                      />
-                    </div>
+                    <dt className="technical-label shrink-0">{label}</dt>
+                    <span
+                      aria-hidden="true"
+                      className="min-w-2 flex-1 border-b border-dotted border-outline"
+                    />
+                    <dd className="text-right font-body text-sm">{value}</dd>
                   </div>
                 ))}
-              </div>
-            </section>
+                <div className="border-t border-outline py-2">
+                  <dt className="technical-label">Pokédex entry</dt>
+                  <dd className="mt-1 font-body text-sm leading-6 text-muted">
+                    {pokemon.species.description ??
+                      "No Pokédex description available."}
+                  </dd>
+                </div>
+              </dl>
+            </details>
 
             <PokemonCollection
               dexEntryId={pokemon.id}
               ownedPokemon={pokemon.ownedPokemon ?? []}
+              shinyImage={pokemon.spriteShiny ?? pokemon.artworkShiny}
               onChanged={refreshCollection}
             />
           </div>
         )}
       </aside>
-    </div>
+    </div>,
+    document.body
   );
 }

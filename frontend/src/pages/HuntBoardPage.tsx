@@ -1,10 +1,14 @@
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import HuntCard from "../components/HuntCard";
 import CreateHuntForm from "../components/CreateHuntForm";
 import { getHunts } from "../services/hunt";
 import type { Hunt, HuntStatus } from "../types/hunt";
 import Button from "../components/Button";
+import { GraphicMark } from "../components/GraphicMark";
+import SystemLoading from "../components/SystemLoading";
+import ScrambleNumber from "../components/ScrambleNumber";
+import { delayForDevLoadingPreview } from "../utils/devLoadingPreview";
 
 type HuntFilter = "ALL" | HuntStatus;
 
@@ -22,10 +26,17 @@ export default function HuntBoardPage() {
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isInitialLoad = useRef(true);
 
   const loadHunts = useCallback(async () => {
+    const previewInitialLoad = isInitialLoad.current;
+    isInitialLoad.current = false;
+
     try {
       const data = await getHunts();
+      if (previewInitialLoad) {
+        await delayForDevLoadingPreview();
+      }
       setHunts(data);
       setError(null);
     } catch (err) {
@@ -62,14 +73,16 @@ export default function HuntBoardPage() {
   );
 
   return (
-    <main className="min-h-screen bg-obsidian px-4 py-10 text-white sm:px-8 lg:px-12">
+    <main className="page-enter flex-1 bg-canvas px-4 py-6 text-ink sm:px-8 lg:px-12">
       <div className="mx-auto max-w-7xl">
-        <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
+        <header className="bios-heading mb-6 flex flex-wrap items-end justify-between gap-4">
+          <GraphicMark variant="frame" className="bios-heading-mark" />
           <div>
-            <p className="mb-2 font-mono text-micro uppercase tracking-widest text-gold">
-              Shiny Archive / Hunts
+            <span className="section-index" aria-hidden="true">02</span>
+            <p className="mb-2 font-mono text-micro uppercase tracking-widest text-ink">
+              S.P.O.N. / Hunt Observations
             </p>
-            <h1 className="font-display text-2xl font-semibold tracking-tight">
+            <h1 className="font-display text-3xl font-bold uppercase leading-none tracking-tight sm:text-4xl">
               Hunt Board
             </h1>
             <p className="mt-3 text-muted">
@@ -80,65 +93,62 @@ export default function HuntBoardPage() {
           <Button
             variant="accent"
             onClick={() => setShowForm(true)}
-            className="rounded-lg bg-gold px-5 py-3 font-body text-xs font-medium text-obsidian hover:opacity-90"
           >
             + New hunt
           </Button>
         </header>
 
-        <div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
           {[
             ["Active hunts", activeCount],
             ["Total encounters", totalEncounters],
             ["Completed hunts", completedCount],
-          ].map(([label, value]) => (
+          ].map(([label, value], index) => (
             <div
               key={label}
-              className="rounded-xl border border-border bg-surface p-5"
+              className="data-block-enter panel border-t-2 border-t-ink p-3"
+              style={{ animationDelay: `${index * 80}ms` }}
             >
               <p className="font-mono text-micro uppercase tracking-widest text-muted">{label}</p>
-              <p className="mt-2 font-display text-3xl tabular-nums">
-                {value.toLocaleString()}
+              <p className="mt-2 font-body text-3xl tabular-nums">
+                <ScrambleNumber value={Number(value)} delayMs={index * 80} />
               </p>
             </div>
           ))}
         </div>
 
-        <div className="mb-6 flex flex-wrap gap-2">
+        <div role="group" aria-label="Hunt status" className="mb-4 flex flex-wrap gap-1">
           {filters.map((option) => (
             <Button
               key={option.value}
-              variant={filter === option.value ? "accent" : "outline"}
+              variant="ghost"
+              className="filter-option"
               onClick={() => setFilter(option.value)}
-              className={`rounded-lg border px-4 py-2 font-body text-xs font-medium ${
-                filter === option.value
-                  ? "border-gold bg-gold text-obsidian"
-                  : "border-border bg-surface text-muted hover:border-gold"
-              }`}
+              aria-pressed={filter === option.value}
             >
               {option.label}
             </Button>
           ))}
         </div>
 
-        {loading && (
-          <p className="py-12 text-center text-muted">
-            Loading hunts...
-          </p>
-        )}
+        {loading && <SystemLoading className="py-12" />}
 
         {error && (
-          <p role="alert" className="mb-5 text-red-400">
+          <p role="alert" className="mb-5 text-danger">
             {error}
           </p>
         )}
 
         {!loading && (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {visibleHunts.map((hunt) => (
+          <div
+            key={filter}
+            className="grid gap-4 md:grid-cols-2 xl:grid-cols-3"
+          >
+            {visibleHunts.map((hunt, index) => (
               <HuntCard
                 key={hunt.id}
                 hunt={hunt}
+                entranceDelay={index * 24}
                 onChanged={loadHunts}
               />
             ))}
@@ -146,7 +156,7 @@ export default function HuntBoardPage() {
         )}
 
         {!loading && !error && visibleHunts.length === 0 && (
-          <div className="rounded-xl border border-dashed border-border py-20 text-center">
+          <div className="shape-organic border border-dashed border-outline py-10 text-center">
             <p className="font-display text-xl font-semibold">
               No hunts here yet
             </p>
