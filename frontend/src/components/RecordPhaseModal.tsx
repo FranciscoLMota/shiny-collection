@@ -1,9 +1,11 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { Sparkles } from "lucide-react";
 import { getPokemon } from "../services/pokemon";
 import { createHuntPhase } from "../services/huntPhases";
 import type { DexEntry } from "../types/pokemon";
+import Button from "./Button";
 
 interface Props {
   huntId: number;
@@ -12,6 +14,7 @@ interface Props {
   onRecorded: () => Promise<void>;
 }
 
+// Records a found shiny as a hunt phase and adds it to the collection.
 export default function RecordPhaseModal({
   huntId,
   targetDexEntryId,
@@ -26,10 +29,7 @@ export default function RecordPhaseModal({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (selected || !search.trim()) {
-      setResults([]);
-      return;
-    }
+    if (selected || !search.trim()) return;
 
     const controller = new AbortController();
     const timeout = window.setTimeout(async () => {
@@ -86,26 +86,27 @@ export default function RecordPhaseModal({
       >
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-gold">
+            <p className="font-mono text-micro uppercase tracking-widest text-gold">
               Shiny found
             </p>
-            <h2 className="mt-1 font-display text-2xl font-bold">
+            <h2 className="mt-1 font-display text-xl font-semibold">
               Record a phase
             </h2>
           </div>
-          <button
+          <Button
+            variant="ghost"
             type="button"
             onClick={onClose}
             disabled={saving}
-            className="text-sm text-muted hover:text-white"
+            className="min-h-0 border-0 bg-transparent p-0 font-body text-xs font-medium text-muted hover:bg-transparent hover:text-white"
           >
             Close ✕
-          </button>
+          </Button>
         </div>
 
         <form onSubmit={submit} className="space-y-5">
           <div>
-            <label htmlFor="phase-search" className="mb-2 block text-sm text-muted">
+            <label htmlFor="phase-search" className="mb-2 block font-body text-xs font-medium text-muted">
               Which shiny did you find?
             </label>
 
@@ -119,16 +120,18 @@ export default function RecordPhaseModal({
                 <span className="flex-1 font-medium">
                   {selected.displayName}
                 </span>
-                <button
+                <Button
+                  variant="ghost"
                   type="button"
                   onClick={() => {
                     setSelected(null);
                     setSearch("");
+                    setResults([]);
                   }}
-                  className="text-xs text-gold"
+                  className="min-h-0 border-0 bg-transparent p-0 font-body text-xs font-medium text-gold hover:bg-transparent"
                 >
                   Change
-                </button>
+                </Button>
               </div>
             ) : (
               <>
@@ -140,26 +143,30 @@ export default function RecordPhaseModal({
                     setResults([]);
                   }}
                   placeholder="Search by name or Dex number"
-                  className="w-full rounded-lg border border-border bg-obsidian px-3 py-3 text-sm outline-none focus:border-gold"
+                  className="w-full rounded-lg border border-border bg-obsidian px-3 py-3 font-body text-xs font-medium outline-none focus:border-gold"
                 />
                 {results.length > 0 && (
                   <div className="mt-2 max-h-52 overflow-y-auto rounded-lg border border-border bg-obsidian">
                     {results.map((entry) => (
-                      <button
+                      <Button
                         key={entry.id}
                         type="button"
-                        onClick={() => setSelected(entry)}
-                        className="flex w-full items-center gap-3 border-b border-border p-2 text-left hover:bg-surface-hover"
+                        variant="ghost"
+                        onClick={() => {
+                          setSelected(entry);
+                          setResults([]);
+                        }}
+                        className="flex w-full items-center gap-3 border-b border-border p-2 text-left font-body text-xs font-medium text-white hover:bg-surface-hover"
                       >
                         <img
                           src={entry.spriteShiny ?? entry.spriteDefault ?? ""}
                           alt=""
                           className="h-10 w-10 object-contain"
                         />
-                        <span className="text-sm">
+                        <span className="font-body text-xs font-medium">
                           #{entry.species.nationalDexNumber} {entry.displayName}
                         </span>
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 )}
@@ -168,7 +175,7 @@ export default function RecordPhaseModal({
           </div>
 
           <div>
-            <label htmlFor="phase-notes" className="mb-2 block text-sm text-muted">
+            <label htmlFor="phase-notes" className="mb-2 block font-body text-xs font-medium text-muted">
               Notes (optional)
             </label>
             <textarea
@@ -177,19 +184,27 @@ export default function RecordPhaseModal({
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
               placeholder="Where did you find it?"
-              className="w-full rounded-lg border border-border bg-obsidian px-3 py-2.5 text-sm outline-none focus:border-gold"
+              className="w-full rounded-lg border border-border bg-obsidian px-3 py-2.5 font-body text-xs font-medium outline-none focus:border-gold"
             />
           </div>
 
-          {error && <p role="alert" className="text-sm text-red-400">{error}</p>}
+          {error && <p role="alert" className="font-body text-sm text-red-400">{error}</p>}
 
-          <button
+          <Button
+            variant="accent"
             type="submit"
             disabled={!selected || saving}
-            className="w-full rounded-lg bg-gold px-4 py-3 text-sm font-semibold text-obsidian disabled:opacity-40"
+            className="w-full rounded-lg bg-gold px-4 py-3 font-body text-xs font-medium text-obsidian disabled:opacity-40"
           >
-            {saving ? "Recording..." : "✦ Record shiny phase"}
-          </button>
+            {saving ? (
+              "Recording..."
+            ) : (
+              <span className="inline-flex items-center justify-center gap-2">
+                <Sparkles size={16} aria-hidden="true" />
+                Record shiny phase
+              </span>
+            )}
+          </Button>
         </form>
       </div>
     </div>,

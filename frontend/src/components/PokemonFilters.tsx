@@ -1,5 +1,6 @@
 
 import type { PokemonFilters as FilterValues } from "../services/pokemon";
+import Button from "./Button";
 
 interface PokemonFiltersProps {
   filters: FilterValues;
@@ -15,9 +16,10 @@ const types = [
 
 const inputClass =
   "w-full rounded-lg border border-border bg-surface " +
-  "px-3 py-2.5 text-sm text-white outline-none " +
+  "px-3 py-2.5 font-body text-xs font-medium text-white outline-none " +
   "transition-colors focus:border-gold";
 
+// Provides search and attribute filters for the Pokédex list.
 export default function PokemonFilters({
   filters,
   onChange,
@@ -100,13 +102,14 @@ export default function PokemonFilters({
           <option value="paldea">Paldean</option>
         </select>
 
-        <button
+        <Button
+          variant="outline"
           type="button"
           onClick={clear}
-          className="rounded-lg border border-border px-4 py-2.5 text-sm text-muted transition-colors hover:border-gold hover:text-white"
+          className="rounded-lg border border-border px-4 py-2.5 font-body text-xs font-medium text-muted transition-colors hover:border-gold hover:text-white"
         >
           Clear
-        </button>
+        </Button>
       </div>
     </div>
   );

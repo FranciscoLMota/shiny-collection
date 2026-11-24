@@ -1,9 +1,10 @@
 
 import { useEffect, useState } from "react";
+import { Sparkles } from "lucide-react";
 import { getPokemonById } from "../services/pokemon";
 import type { DexEntry } from "../types/pokemon";
 import PokemonCollection from "./PokemonCollection";
-
+import Button from "./Button";
 
 interface Props {
   pokemonId: number | null;
@@ -11,6 +12,7 @@ interface Props {
   onCollectionChanged: () => void;
 }
 
+// Formats API ability keys into readable names.
 function formatName(value: string) {
   return value
     .split("-")
@@ -18,6 +20,7 @@ function formatName(value: string) {
     .join(" ");
 }
 
+// Shows the best available Pokémon image or a fallback message.
 function PokemonImage({
   src,
   alt,
@@ -34,7 +37,7 @@ function PokemonImage({
           className="h-full w-full object-contain"
         />
       ) : (
-        <span className="text-sm text-muted">
+        <span className="font-body text-sm text-muted">
           Image unavailable
         </span>
       )}
@@ -42,6 +45,7 @@ function PokemonImage({
   );
 }
 
+// Loads Pokémon details and hosts the specimen-management panel.
 export default function PokemonDetailsPanel({
   pokemonId,
   onClose,
@@ -58,11 +62,10 @@ export default function PokemonDetailsPanel({
   }
 
   useEffect(() => {
-    if (pokemonId === null) {
-      return;
-    }
+    if (pokemonId === null) return;
 
     const controller = new AbortController();
+    const selectedPokemonId = pokemonId;
 
     async function load() {
       setLoading(true);
@@ -71,7 +74,7 @@ export default function PokemonDetailsPanel({
 
       try {
         const result = await getPokemonById(
-          pokemonId!,
+          selectedPokemonId,
           controller.signal
         );
         if (!controller.signal.aborted) {
@@ -107,22 +110,23 @@ export default function PokemonDetailsPanel({
 
   const stats = pokemon
     ? [
-      ["HP", pokemon.hp],
-      ["Attack", pokemon.attack],
-      ["Defense", pokemon.defense],
-      ["Sp. Attack", pokemon.specialAttack],
-      ["Sp. Defense", pokemon.specialDefense],
-      ["Speed", pokemon.speed],
-    ] as const
+        ["HP", pokemon.hp],
+        ["Attack", pokemon.attack],
+        ["Defense", pokemon.defense],
+        ["Sp. Attack", pokemon.specialAttack],
+        ["Sp. Defense", pokemon.specialDefense],
+        ["Speed", pokemon.speed],
+      ] as const
     : [];
 
   return (
     <div className="fixed inset-0 z-50">
-      <button
+      <Button
+        variant="ghost"
         type="button"
         aria-label="Close Pokémon details"
         onClick={onClose}
-        className="absolute inset-0 w-full bg-black/75"
+        className="absolute inset-0 min-h-0 w-full border-0 bg-black/75 p-0 hover:bg-black/75"
       />
 
       <aside
@@ -132,17 +136,18 @@ export default function PokemonDetailsPanel({
         className="absolute inset-y-0 right-0 w-full max-w-xl overflow-y-auto border-l border-border bg-surface p-5 shadow-2xl sm:p-8"
       >
         <div className="mb-7 flex items-center justify-between">
-          <span className="text-xs font-semibold tracking-widest text-gold uppercase">
+          <span className="font-mono text-micro uppercase tracking-widest text-gold">
             Pokédex entry
           </span>
 
-          <button
+          <Button
+            variant="outline"
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-border px-3 py-2 text-sm text-muted hover:text-white"
+            className="rounded-lg border border-border px-3 py-2 font-body text-xs font-medium text-muted hover:text-white"
           >
             Close ✕
-          </button>
+          </Button>
         </div>
 
         {loading && <p className="text-muted">Loading details...</p>}
@@ -151,13 +156,13 @@ export default function PokemonDetailsPanel({
         {pokemon && (
           <div className="space-y-7">
             <header>
-              <p className="font-mono text-sm text-gold">
+              <p className="font-mono text-micro uppercase tracking-widest text-gold">
                 #{String(pokemon.species.nationalDexNumber).padStart(4, "0")}
               </p>
-              <h2 className="mt-1 font-display text-4xl font-bold">
+              <h2 className="mt-1 font-display text-4xl font-medium tracking-tighter">
                 {pokemon.displayName}
               </h2>
-              <p className="mt-2 text-sm text-muted">
+              <p className="mt-2 font-body text-sm text-muted">
                 {pokemon.species.genus ?? "Pokémon"}
                 {" · "}
                 Generation {pokemon.species.generation}
@@ -170,7 +175,7 @@ export default function PokemonDetailsPanel({
                   src={pokemon.artworkDefault ?? pokemon.spriteDefault}
                   alt={pokemon.displayName}
                 />
-                <p className="mt-2 text-center text-xs text-muted">
+                <p className="mt-2 text-center font-body text-xs text-muted">
                   Regular
                 </p>
               </div>
@@ -179,25 +184,25 @@ export default function PokemonDetailsPanel({
                   src={pokemon.artworkShiny ?? pokemon.spriteShiny}
                   alt={`Shiny ${pokemon.displayName}`}
                 />
-                <p className="mt-2 text-center text-xs text-gold">
-                  Shiny ✦
+                <p className="mt-2 flex items-center justify-center gap-1 text-center font-body text-xs text-gold">
+                  Shiny <Sparkles size={12} aria-hidden="true" />
                 </p>
               </div>
             </div>
 
             <section>
-              <h3 className="mb-3 font-display text-lg font-semibold">
+              <h3 className="mb-3 font-display text-xl font-semibold">
                 Pokédex information
               </h3>
-              <p className="text-sm leading-7 text-muted">
+              <p className="font-body text-sm leading-7 text-muted">
                 {pokemon.species.description ??
                   "No Pokédex description available."}
               </p>
             </section>
 
-            <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="grid grid-cols-2 gap-3 font-body text-sm">
               <div className="rounded-lg border border-border p-4">
-                <p className="mb-1 text-xs text-muted">Type</p>
+                <p className="mb-1 font-mono text-micro uppercase tracking-widest text-muted">Type</p>
                 <p className="capitalize">
                   {[pokemon.primaryType, pokemon.secondaryType]
                     .filter(Boolean)
@@ -206,14 +211,14 @@ export default function PokemonDetailsPanel({
               </div>
 
               <div className="rounded-lg border border-border p-4">
-                <p className="mb-1 text-xs text-muted">Region</p>
+                <p className="mb-1 font-mono text-micro uppercase tracking-widest text-muted">Region</p>
                 <p className="capitalize">
                   {pokemon.region ?? "Standard"}
                 </p>
               </div>
 
               <div className="rounded-lg border border-border p-4">
-                <p className="mb-1 text-xs text-muted">Height</p>
+                <p className="mb-1 font-mono text-micro uppercase tracking-widest text-muted">Height</p>
                 <p>
                   {pokemon.height === null
                     ? "Unknown"
@@ -222,7 +227,7 @@ export default function PokemonDetailsPanel({
               </div>
 
               <div className="rounded-lg border border-border p-4">
-                <p className="mb-1 text-xs text-muted">Weight</p>
+                <p className="mb-1 font-mono text-micro uppercase tracking-widest text-muted">Weight</p>
                 <p>
                   {pokemon.weight === null
                     ? "Unknown"
@@ -232,20 +237,20 @@ export default function PokemonDetailsPanel({
             </div>
 
             <section>
-              <h3 className="mb-3 font-display text-lg font-semibold">
+              <h3 className="mb-3 font-display text-xl font-semibold">
                 Abilities
               </h3>
               <div className="flex flex-wrap gap-2">
                 {pokemon.abilities.map((ability) => (
                   <span
                     key={ability}
-                    className="rounded-md bg-obsidian px-3 py-2 text-sm"
+                    className="rounded-md bg-obsidian px-3 py-2 font-body text-sm"
                   >
                     {formatName(ability)}
                   </span>
                 ))}
                 {pokemon.hiddenAbility && (
-                  <span className="rounded-md border border-gold/40 px-3 py-2 text-sm text-gold">
+                  <span className="rounded-md border border-gold/40 px-3 py-2 font-body text-sm text-gold">
                     {formatName(pokemon.hiddenAbility)} · Hidden
                   </span>
                 )}
@@ -253,13 +258,13 @@ export default function PokemonDetailsPanel({
             </section>
 
             <section>
-              <h3 className="mb-4 font-display text-lg font-semibold">
+              <h3 className="mb-4 font-display text-xl font-semibold">
                 Base stats
               </h3>
               <div className="space-y-3">
                 {stats.map(([name, value]) => (
                   <div key={name}>
-                    <div className="mb-1 flex justify-between text-xs">
+                    <div className="mb-1 flex justify-between font-body text-xs">
                       <span className="text-muted">{name}</span>
                       <span>{value ?? "—"}</span>
                     </div>

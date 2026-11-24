@@ -4,6 +4,7 @@ import HuntCard from "../components/HuntCard";
 import CreateHuntForm from "../components/CreateHuntForm";
 import { getHunts } from "../services/hunt";
 import type { Hunt, HuntStatus } from "../types/hunt";
+import Button from "../components/Button";
 
 type HuntFilter = "ALL" | HuntStatus;
 
@@ -65,10 +66,10 @@ export default function HuntBoardPage() {
       <div className="mx-auto max-w-7xl">
         <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="mb-2 text-xs font-semibold tracking-[0.2em] text-gold uppercase">
+            <p className="mb-2 font-mono text-micro uppercase tracking-widest text-gold">
               Shiny Archive / Hunts
             </p>
-            <h1 className="font-display text-4xl font-bold sm:text-5xl">
+            <h1 className="font-display text-2xl font-semibold tracking-tight">
               Hunt Board
             </h1>
             <p className="mt-3 text-muted">
@@ -76,12 +77,13 @@ export default function HuntBoardPage() {
             </p>
           </div>
 
-          <button
+          <Button
+            variant="accent"
             onClick={() => setShowForm(true)}
-            className="rounded-lg bg-gold px-5 py-3 text-sm font-semibold text-obsidian hover:opacity-90"
+            className="rounded-lg bg-gold px-5 py-3 font-body text-xs font-medium text-obsidian hover:opacity-90"
           >
             + New hunt
-          </button>
+          </Button>
         </header>
 
         <div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -94,8 +96,8 @@ export default function HuntBoardPage() {
               key={label}
               className="rounded-xl border border-border bg-surface p-5"
             >
-              <p className="text-sm text-muted">{label}</p>
-              <p className="mt-2 font-display text-3xl font-bold tabular-nums">
+              <p className="font-mono text-micro uppercase tracking-widest text-muted">{label}</p>
+              <p className="mt-2 font-display text-3xl tabular-nums">
                 {value.toLocaleString()}
               </p>
             </div>
@@ -104,17 +106,18 @@ export default function HuntBoardPage() {
 
         <div className="mb-6 flex flex-wrap gap-2">
           {filters.map((option) => (
-            <button
+            <Button
               key={option.value}
+              variant={filter === option.value ? "accent" : "outline"}
               onClick={() => setFilter(option.value)}
-              className={`rounded-lg border px-4 py-2 text-sm ${
+              className={`rounded-lg border px-4 py-2 font-body text-xs font-medium ${
                 filter === option.value
                   ? "border-gold bg-gold text-obsidian"
                   : "border-border bg-surface text-muted hover:border-gold"
               }`}
             >
               {option.label}
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -147,7 +150,7 @@ export default function HuntBoardPage() {
             <p className="font-display text-xl font-semibold">
               No hunts here yet
             </p>
-            <p className="mt-2 text-sm text-muted">
+            <p className="mt-2 font-body text-sm text-muted">
               Create a hunt or choose another status.
             </p>
           </div>

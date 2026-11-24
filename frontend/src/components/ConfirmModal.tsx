@@ -2,6 +2,7 @@
 import { useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
 import { AlertTriangle, CircleHelp, X } from "lucide-react";
+import Button from "./Button";
 
 type ConfirmVariant = "danger" | "warning" | "default";
 
@@ -33,6 +34,7 @@ const variants = {
   },
 };
 
+// Shared confirmation dialog with focus, Escape-key, and backdrop handling.
 export default function ConfirmModal({
   open,
   title,
@@ -87,15 +89,16 @@ export default function ConfirmModal({
         aria-describedby={descriptionId}
         className="relative w-full max-w-md rounded-2xl border border-border bg-surface p-6 shadow-2xl"
       >
-        <button
+        <Button
+          variant="ghost"
           type="button"
           onClick={onCancel}
           disabled={loading}
           aria-label="Close dialog"
-          className="absolute right-5 top-5 text-muted transition-colors hover:text-white disabled:opacity-40"
+          className="absolute right-5 top-5 min-h-0 border-0 bg-transparent p-0 text-muted transition-colors hover:bg-transparent hover:text-white disabled:opacity-40"
         >
           <X size={18} />
-        </button>
+        </Button>
 
         <div
           className={`mb-5 flex h-12 w-12 items-center justify-center rounded-xl ${style.icon}`}
@@ -109,14 +112,14 @@ export default function ConfirmModal({
 
         <h2
           id={titleId}
-          className="font-display text-2xl font-bold text-white"
+          className="font-display text-xl font-semibold text-white"
         >
           {title}
         </h2>
 
         <p
           id={descriptionId}
-          className="mt-3 text-sm leading-6 text-muted"
+          className="mt-3 font-body text-sm leading-6 text-muted"
         >
           {description}
         </p>
@@ -126,24 +129,25 @@ export default function ConfirmModal({
         )}
 
         <div className="mt-7 flex justify-end gap-3">
-          <button
+          <Button
+            variant="outline"
             ref={cancelRef}
             type="button"
             onClick={onCancel}
             disabled={loading}
-            className="rounded-lg border border-border bg-surface-hover px-5 py-2.5 text-sm font-medium text-white transition-colors hover:border-muted disabled:opacity-40"
+            className="rounded-lg border border-border bg-surface-hover px-5 py-2.5 font-body text-xs font-medium text-white transition-colors hover:border-muted disabled:opacity-40"
           >
             {cancelLabel}
-          </button>
-
-          <button
+          </Button>
+          <Button
+            variant={variant === "danger" ? "danger" : "accent"}
             type="button"
             onClick={onConfirm}
             disabled={loading}
-            className={`rounded-lg px-5 py-2.5 text-sm font-semibold transition-colors disabled:opacity-40 ${style.button}`}
+            className={`rounded-lg px-5 py-2.5 font-body text-xs font-medium transition-colors disabled:opacity-40 ${style.button}`}
           >
             {loading ? "Processing..." : confirmLabel}
-          </button>
+          </Button>
         </div>
       </div>
     </div>,

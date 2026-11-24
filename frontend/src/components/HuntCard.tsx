@@ -1,6 +1,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import confetti from "@hiseb/confetti";
+import { Sparkles } from "lucide-react";
 import type { Hunt, HuntStatus } from "../types/hunt";
 import {
   addEncounters,
@@ -12,6 +13,7 @@ import RecordPhaseModal from "./RecordPhaseModal";
 import { getHuntPhases } from "../services/huntPhases";
 import type { HuntPhase } from "../types/huntPhases";
 import ConfirmModal from "./ConfirmModal";
+import Button from "./Button";
 
 
 interface Props {
@@ -26,6 +28,7 @@ const statusStyles: Record<HuntStatus, string> = {
   COMPLETED: "text-blue-400 border-blue-400/40",
 };
 
+// Displays a hunt, its encounter controls, and its phase history.
 export default function HuntCard({ hunt, onChanged }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,14 +42,20 @@ export default function HuntCard({ hunt, onChanged }: Props) {
   const [phaseError, setPhaseError] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [shinyTransition, setShinyTransition] = useState(false);
-  const [encounterDraft, setEncounterDraft] = useState(
-    String(hunt.encounters)
-  );
+  const [encounterDraftState, setEncounterDraftState] = useState({
+    count: hunt.encounters,
+    value: String(hunt.encounters),
+  });
   const [encounterStep, setEncounterStep] = useState("1");
 
-  useEffect(() => {
-    setEncounterDraft(String(hunt.encounters));
-  }, [hunt.encounters]);
+  const encounterDraft =
+    encounterDraftState.count === hunt.encounters
+      ? encounterDraftState.value
+      : String(hunt.encounters);
+
+  function setEncounterDraft(value: string) {
+    setEncounterDraftState({ count: hunt.encounters, value });
+  }
 
   async function loadPhases() {
     try {
@@ -59,7 +68,22 @@ export default function HuntCard({ hunt, onChanged }: Props) {
   }
 
   useEffect(() => {
-    void loadPhases();
+    let active = true;
+
+    getHuntPhases(hunt.id)
+      .then((data) => {
+        if (active) {
+          setPhases(data);
+          setPhaseError(null);
+        }
+      })
+      .catch(() => {
+        if (active) setPhaseError("Unable to load phase history");
+      });
+
+    return () => {
+      active = false;
+    };
   }, [hunt.id]);
 
   const isCompleted = hunt.status === "COMPLETED";
@@ -85,12 +109,8 @@ export default function HuntCard({ hunt, onChanged }: Props) {
 
     if (nextCount === hunt.encounters) return;
 
-    await perform(() =>
-      updateHunt(hunt.id, { encounters: nextCount })
-    );
+    await perform(() => updateHunt(hunt.id, { encounters: nextCount }));
   }
-
-
   async function perform(
     action: () => Promise<unknown>,
     celebrate = false
@@ -155,12 +175,19 @@ export default function HuntCard({ hunt, onChanged }: Props) {
       `}
     >
       <div className="mb-5 flex items-start justify-between gap-3">
-        <span className="font-mono text-xs text-muted">
+        <span className="font-mono text-micro uppercase tracking-widest text-muted">
           #{String(pokemon.species.nationalDexNumber).padStart(4, "0")}
         </span>
-        {hunt.status !== "COMPLETED" ? (
-          <div className="flex items-center gap-2">
-            <button
+        <div className="flex items-center gap-2">
+          {hunt.status === "COMPLETED" ? (
+            <span
+              className={`rounded-md border px-2.5 py-1 font-body text-xs font-medium ${statusStyles[hunt.status]}`}
+            >
+              {hunt.status}
+            </span>
+          ) : (
+            <Button
+              variant={hunt.status === "ACTIVE" ? "outline" : "accent"}
               type="button"
               disabled={busy}
               onClick={() =>
@@ -170,45 +197,27 @@ export default function HuntCard({ hunt, onChanged }: Props) {
                   })
                 )
               }
-              className={`rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
+              className={`rounded-md border px-3 py-1.5 font-body text-xs font-medium transition-colors disabled:opacity-50 ${
                 hunt.status === "ACTIVE"
                   ? "border-gold/40 bg-gold/10 text-gold hover:bg-gold/20"
                   : "border-success/40 bg-success/10 text-success hover:bg-success/20"
               }`}
             >
               {hunt.status === "ACTIVE" ? "Stop" : "Start"}
-            </button>
-
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => setShowDeleteModal(true)}
-              aria-label={`Delete ${pokemon.displayName} hunt`}
-              title="Delete hunt"
-              className="flex h-7 w-7 items-center justify-center rounded-md border border-red-400/40 text-sm font-bold text-red-400 transition-colors hover:border-red-400 hover:bg-red-400/10 disabled:opacity-50"
-            >
-              ×
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <span
-              className={`rounded-md border px-2.5 py-1 text-xs font-semibold ${statusStyles[hunt.status]}`}
-            >
-              {hunt.status}
-            </span>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => setShowDeleteModal(true)}
-              aria-label={`Delete ${pokemon.displayName} hunt`}
-              title="Delete hunt"
-              className="flex h-7 w-7 items-center justify-center rounded-md border border-red-400/40 text-sm font-bold text-red-400 transition-colors hover:border-red-400 hover:bg-red-400/10 disabled:opacity-50"
-            >
-              ×
-            </button>
-          </div>
-        )}
+            </Button>
+          )}
+          <Button
+            variant="danger"
+            type="button"
+            disabled={busy}
+            onClick={() => setShowDeleteModal(true)}
+            aria-label={`Delete ${pokemon.displayName} hunt`}
+            title="Delete hunt"
+            className="flex h-7 w-7 items-center justify-center rounded-md border border-red-400/40 font-body text-xs font-medium text-red-400 transition-colors hover:border-red-400 hover:bg-red-400/10 disabled:opacity-50"
+          >
+            ×
+          </Button>
+        </div>
       </div>
 
       <div className="flex items-center gap-4">
@@ -225,13 +234,13 @@ export default function HuntCard({ hunt, onChanged }: Props) {
         </div>
 
         <div className="min-w-0">
-          <h3 className="truncate font-display text-xl font-bold">
+          <h3 className="truncate font-display text-base font-semibold">
             {pokemon.displayName}
           </h3>
-          <p className="mt-1 text-sm text-muted">
+          <p className="mt-1 font-body text-sm text-muted">
             {hunt.game || "Game not specified"}
           </p>
-          <p className="mt-1 text-xs text-muted">
+          <p className="mt-1 font-body text-xs text-muted">
             {hunt.method || "Method not specified"}
           </p>
         </div>
@@ -240,11 +249,11 @@ export default function HuntCard({ hunt, onChanged }: Props) {
       <div className="my-6 rounded-lg border border-border bg-obsidian p-4">
         <div className="grid grid-cols-2 gap-4">
           <div className="text-left">
-            <p className="text-xs font-medium tracking-widest text-muted uppercase">
+            <p className="font-mono text-micro uppercase tracking-widest text-muted">
               Encounters
             </p>
             {isCompleted ? (
-              <p className="mt-2 font-display text-4xl font-bold tabular-nums">
+              <p className="mt-2 font-display text-3xl tabular-nums">
                 {hunt.encounters.toLocaleString()}
               </p>
             ) : (
@@ -266,16 +275,16 @@ export default function HuntCard({ hunt, onChanged }: Props) {
                   }
                 }}
                 aria-label="Encounter count"
-                className="mt-2 w-full bg-transparent font-display text-4xl font-bold tabular-nums outline-none focus:text-gold disabled:cursor-not-allowed"
+                className="mt-2 w-full bg-transparent font-display text-3xl tabular-nums outline-none focus:text-gold disabled:cursor-not-allowed"
               />
             )}
           </div>
 
           <div className="text-right">
-            <p className="text-xs font-medium tracking-widest text-muted uppercase">
+            <p className="font-mono text-micro uppercase tracking-widest text-muted">
               Phases
             </p>
-            <p className="mt-2 font-display text-4xl font-bold tabular-nums">
+            <p className="mt-2 font-display text-3xl tabular-nums">
               {phases.length.toLocaleString()}
             </p>
           </div>
@@ -283,7 +292,8 @@ export default function HuntCard({ hunt, onChanged }: Props) {
 
         {!isCompleted && (
           <div className="mt-4 grid grid-cols-[1fr_5rem_1fr] items-stretch gap-2">
-            <button
+            <Button
+              variant="outline"
               type="button"
               disabled={busy || hunt.status !== "ACTIVE"}
               onClick={() => {
@@ -298,10 +308,10 @@ export default function HuntCard({ hunt, onChanged }: Props) {
                   void perform(() => addEncounters(hunt.id, -amount));
                 }
               }}
-              className="rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold hover:border-gold hover:text-gold disabled:cursor-not-allowed disabled:opacity-30"
+              className="rounded-lg border border-border bg-surface px-3 py-2 font-body text-xs font-medium text-white hover:border-gold hover:text-gold disabled:cursor-not-allowed disabled:opacity-30"
             >
               −
-            </button>
+            </Button>
 
             <input
               type="number"
@@ -312,10 +322,11 @@ export default function HuntCard({ hunt, onChanged }: Props) {
               disabled={busy || hunt.status !== "ACTIVE"}
               onChange={(event) => setEncounterStep(event.target.value)}
               aria-label="Encounter adjustment value"
-              className="min-w-0 rounded-lg border border-border bg-surface px-2 py-2 text-center text-sm font-semibold outline-none focus:border-gold disabled:opacity-30"
+              className="min-w-0 rounded-lg border border-border bg-surface px-2 py-2 text-center font-body text-xs font-medium outline-none focus:border-gold disabled:opacity-30"
             />
 
-            <button
+            <Button
+              variant="outline"
               type="button"
               disabled={busy || hunt.status !== "ACTIVE"}
               onClick={() => {
@@ -330,22 +341,22 @@ export default function HuntCard({ hunt, onChanged }: Props) {
                   void perform(() => addEncounters(hunt.id, amount));
                 }
               }}
-              className="rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold hover:border-gold hover:text-gold disabled:cursor-not-allowed disabled:opacity-30"
+              className="rounded-lg border border-border bg-surface px-3 py-2 font-body text-xs font-medium text-white hover:border-gold hover:text-gold disabled:cursor-not-allowed disabled:opacity-30"
             >
               + 
-            </button>
+            </Button>
           </div>
         )}
 
         {phaseError && (
-          <p role="alert" className="mt-3 text-xs text-red-400">
+          <p role="alert" className="mt-3 font-body text-xs text-red-400">
             {phaseError}
           </p>
         )}
 
         {phases.length > 0 && (
           <div className="mt-5 border-t border-border pt-4">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">
+            <p className="mb-3 font-mono text-micro uppercase tracking-widest text-muted">
               Phase history
             </p>
             <div className="space-y-3">
@@ -361,15 +372,15 @@ export default function HuntCard({ hunt, onChanged }: Props) {
                     className="h-10 w-10 object-contain"
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">
+                    <p className="truncate font-body text-sm font-medium">
                       Phase {phase.phaseNumber} · {phase.dexEntry.displayName}
                     </p>
-                    <p className="text-xs text-muted">
+                    <p className="font-body text-xs text-muted">
                       {phase.encounters.toLocaleString()} encounters
                     </p>
                   </div>
                   {phase.ownedPokemonId && (
-                    <span className="text-xs text-success">Collected</span>
+                    <span className="font-body text-xs font-medium text-success">Collected</span>
                   )}
                 </div>
               ))}
@@ -383,16 +394,21 @@ export default function HuntCard({ hunt, onChanged }: Props) {
       {hunt.status !== "COMPLETED" && (
         <div className="grid grid-cols-4 gap-2">
           {hunt.status === "ACTIVE" && (
-            <button
+            <Button
+              variant="accent"
               type="button"
               disabled={busy}
               onClick={() => setShowPhaseModal(true)}
-              className="col-span-1 rounded-lg border border-gold/50 bg-gold/10 px-2 py-2.5 text-xs font-semibold text-gold hover:bg-gold/20 disabled:opacity-40"
+              className="col-span-1 rounded-lg border border-gold/50 bg-gold/10 px-2 py-2.5 font-body text-xs font-medium text-gold hover:bg-gold/20 disabled:opacity-40"
             >
-              ✦ Phase
-            </button>
+              <span className="flex items-center justify-center gap-1">
+                <Sparkles size={14} aria-hidden="true" />
+                Phase
+              </span>
+            </Button>
           )}
-          <button
+          <Button
+            variant="accent"
             type="button"
             disabled={busy}
             onClick={() =>
@@ -401,25 +417,28 @@ export default function HuntCard({ hunt, onChanged }: Props) {
                 true
               )
             }
-            className={`${hunt.status === "ACTIVE" ? "col-span-3" : "col-span-4"} rounded-lg bg-gold px-4 py-2.5 text-sm font-semibold text-obsidian hover:opacity-90 disabled:opacity-50`}
+            className={`${hunt.status === "ACTIVE" ? "col-span-3" : "col-span-4"} rounded-lg bg-gold px-4 py-2.5 font-body text-xs font-medium text-obsidian hover:opacity-90 disabled:opacity-50`}
           >
-            ✦ Complete hunt
-          </button>
+            <span className="flex items-center justify-center gap-2">
+              <Sparkles size={16} aria-hidden="true" />
+              Complete hunt
+            </span>
+          </Button>
         </div>
       )}
 
       {hunt.status === "COMPLETED" && (
-        <p className="rounded-lg border border-success/30 bg-success/10 p-3 text-center text-sm text-success">
+        <p className="rounded-lg border border-success/30 bg-success/10 p-3 text-center font-body text-sm text-success">
           Hunt completed!
         </p>
       )}
 
       {hunt.notes && (
-        <p className="mt-4 text-sm text-muted">{hunt.notes}</p>
+        <p className="mt-4 font-body text-sm text-muted">{hunt.notes}</p>
       )}
 
       {error && (
-        <p role="alert" className="mt-3 text-sm text-red-400">
+        <p role="alert" className="mt-3 font-body text-sm text-red-400">
           {error}
         </p>
       )}

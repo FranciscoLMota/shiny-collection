@@ -2,12 +2,14 @@
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, MouseEvent } from "react";
 import type { DexEntry } from "../types/pokemon";
-import { Sparkles } from "lucide-react";
+import { LocateFixed, Sparkles } from "lucide-react";
+import Button from "./Button";
 
 interface PokemonCardProps {
   pokemon: DexEntry;
   onClick: (id: number) => void;
   onQuickAdd?: (dexEntryId: number) => Promise<void>;
+  onQuickHunt?: (dexEntryId: number) => Promise<void>;
 }
 
 const typeColors: Record<string, string> = {
@@ -34,8 +36,9 @@ const typeColors: Record<string, string> = {
 function TypeBadge({ type }: { type: string }) {
   return (
     <span
-      className={`rounded-md px-2.5 py-1 text-xs font-semibold text-white ${typeColors[type.toLowerCase()] ?? "bg-surface-hover"
-        }`}
+      className={`rounded-md px-2.5 py-1 font-body text-xs font-medium text-white ${
+        typeColors[type.toLowerCase()] ?? "bg-surface-hover"
+      }`}
     >
       {type}
     </span>
@@ -57,10 +60,12 @@ const defaultStyle: CardStyle = {
   "--rotate-y": "0deg",
 };
 
+// Pokédex entry card with collection, hunt, and hover actions.
 export default function PokemonCard({
   pokemon,
   onClick,
   onQuickAdd,
+  onQuickHunt,
 }: PokemonCardProps) {
   const cardRef = useRef<HTMLElement>(null);
   const [isHovered, setIsHovered] = useState(false);
@@ -71,9 +76,11 @@ export default function PokemonCard({
 
   const collection = pokemon.collection;
   const isObtained = collection?.isObtained ?? false;
-  const isInHome = collection?.isInHome ?? false;
   const [isAdding, setIsAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
+  const [isCreatingHunt, setIsCreatingHunt] = useState(false);
+  const [huntCreated, setHuntCreated] = useState(false);
+  const [huntError, setHuntError] = useState<string | null>(null);
   const previousObtained = useRef(isObtained);
   const [shinyTransition, setShinyTransition] = useState(false);
 
@@ -129,9 +136,7 @@ export default function PokemonCard({
     card.style.setProperty("--rotate-y", "0deg");
   }
 
-  async function handleQuickAdd(
-    event: React.MouseEvent<HTMLButtonElement>
-  ) {
+  async function handleQuickAdd(event: MouseEvent<HTMLButtonElement>) {
     event.stopPropagation();
 
     if (isAdding || isObtained || !onQuickAdd) return;
@@ -152,13 +157,30 @@ export default function PokemonCard({
     }
   }
 
+  async function handleQuickHunt(event: MouseEvent<HTMLButtonElement>) {
+    event.stopPropagation();
 
+    if (isCreatingHunt || huntCreated || isObtained || !onQuickHunt) return;
+
+    setIsCreatingHunt(true);
+    setHuntError(null);
+
+    try {
+      await onQuickHunt(pokemon.id);
+      setHuntCreated(true);
+    } catch (error) {
+      setHuntError(
+        error instanceof Error ? error.message : "Unable to create hunt"
+      );
+    } finally {
+      setIsCreatingHunt(false);
+    }
+  }
 
   return (
     <div className="group relative [perspective:1000px]">
       <article
         ref={cardRef}
-
         onClick={() => onClick(pokemon.id)}
         onMouseEnter={() => setIsHovered(true)}
         onMouseMove={handleMouseMove}
@@ -181,52 +203,74 @@ export default function PokemonCard({
           </>
         )}
 
-        <div className="flex items-center justify-between text-xs text-muted">
-          <span className="font-mono">#{dexNumber}</span>
+        <div className="flex items-center justify-between text-muted">
+          <span className="font-mono text-micro uppercase tracking-widest">#{dexNumber}</span>
           {pokemon.region && (
-            <span className="capitalize text-gold">
+            <span className="font-mono text-micro uppercase tracking-widest text-gold">
               {pokemon.region}
             </span>
           )}
-          <div className="mt-auto pt-5">
-            <div className="">
-              {isObtained ? (
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs text-white">
-                    <Sparkles color="#ffffff" />
-                  </span>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  disabled={isAdding || !onQuickAdd}
-                  onClick={handleQuickAdd}
-                  className="
-          flex w-full items-center justify-center gap-2
-          rounded-lg border border-gold/40
-          bg-gold/10 px-3 py-2.5
-          text-xs font-semibold text-gold
-          transition-all duration-200
-          hover:border-gold hover:bg-gold hover:text-obsidian
-          disabled:cursor-not-allowed disabled:opacity-50
-        "
-                >
-                  {isAdding ? (
-                    "Adding..."
-                  ) : (
-                    <>
-                      <span className="text-base leading-none">+</span>
-                    </>
+          <div className="pt-1">
+            {isObtained ? (
+              <Sparkles size={16} color="#ffffff" aria-hidden="true" />
+            ) : (
+              <>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="accent"
+                    type="button"
+                    disabled={isAdding || !onQuickAdd}
+                    onClick={handleQuickAdd}
+                    className="
+            flex min-w-0 flex-1 items-center justify-center gap-2
+            rounded-lg border border-gold/40
+            bg-gold/10 px-3 py-2
+            font-body text-xs font-medium text-gold
+            transition-all duration-200
+            hover:border-gold hover:bg-gold hover:text-obsidian
+            disabled:cursor-not-allowed disabled:opacity-50
+          "
+                  >
+                    {isAdding ? "Adding..." : <span className="text-base leading-none">+</span>}
+                  </Button>
+                  {onQuickHunt && (
+                    <Button
+                      variant="ghost"
+                      type="button"
+                      disabled={isCreatingHunt || huntCreated}
+                      onClick={handleQuickHunt}
+                      aria-label={
+                        huntCreated
+                          ? "Hunt created"
+                          : isCreatingHunt
+                            ? "Creating hunt"
+                            : `Create a hunt for ${pokemon.displayName}`
+                      }
+                      title={
+                        huntCreated
+                          ? "Hunt created"
+                          : isCreatingHunt
+                            ? "Creating hunt..."
+                            : "Add hunt"
+                      }
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-success/40 bg-success/10 text-success transition-colors hover:border-success hover:bg-success/20 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <LocateFixed size={16} aria-hidden="true" />
+                    </Button>
                   )}
-                </button>
-              )}
-
-              {addError && (
-                <p role="alert" className="mt-2 text-xs text-red-400">
-                  {addError}
-                </p>
-              )}
-            </div>
+                </div>
+                {addError && (
+                  <p role="alert" className="mt-2 font-body text-xs text-red-400">
+                    {addError}
+                  </p>
+                )}
+                {huntError && (
+                  <p role="alert" className="mt-2 font-body text-xs text-red-400">
+                    {huntError}
+                  </p>
+                )}
+              </>
+            )}
           </div>
         </div>
 
@@ -244,13 +288,18 @@ export default function PokemonCard({
                 `}
             />
           ) : (
-            <span className="text-sm text-muted">
+            <span className="font-body text-sm text-muted">
               No image available
             </span>
           )}
         </div>
-        <h3 className="mb-3 truncate font-display text-base font-semibold">
-          {pokemon.displayName}
+        <h3 className="mb-3 flex min-w-0 items-center gap-2 font-display text-base font-semibold">
+          <span className="truncate">{pokemon.displayName}</span>
+          {isObtained && (
+            <span className="shrink-0 font-body text-xs font-medium text-gold">
+              x{Math.max(collection?.ownedCount ?? 0, 1)}
+            </span>
+          )}
         </h3>
 
         <div className="flex flex-wrap gap-1.5">
@@ -260,29 +309,7 @@ export default function PokemonCard({
           )}
         </div>
 
-        <div className="mt-4 border-t border-border pt-3">
-          {isInHome ? (
-            <span className="text-xs font-medium text-success">
-              ✓ In Pokémon HOME
-            </span>
-          ) : isObtained ? (
-            <span className="text-xs font-medium text-gold">
-              ✦ Obtained
-            </span>
-          ) : (
-            <span className="text-xs text-muted">
-              Not collected
-            </span>
-          )}
-
-          {(collection?.ownedCount ?? 0) > 1 && (
-            <span className="ml-2 text-xs text-muted">
-              ×{collection?.ownedCount}
-            </span>
-          )}
-
-        </div>
       </article>
-    </div >
+    </div>
   );
 }
