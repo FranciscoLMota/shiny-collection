@@ -1,52 +1,55 @@
 
-import { useState } from "react";
+import { Navigate, NavLink, Route, Routes } from "react-router-dom";
+import { Sparkles } from "lucide-react";
 import NationalDexPage from "./pages/NationalDexPage";
 import HuntBoardPage from "./pages/HuntBoardPage";
 
-type Page = "dex" | "hunts";
-
 export default function App() {
-  const [page, setPage] = useState<Page>("dex");
-
   return (
     <div className="min-h-screen bg-obsidian">
       <nav className="sticky top-0 z-40 border-b border-border bg-obsidian/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-8 lg:px-12">
-          <span className="font-display text-lg font-bold tracking-tight text-gold">
-            ✦ Shiny Archive
+          <span className="flex items-center gap-1.5 font-display text-xl font-semibold tracking-tight text-gold">
+            <Sparkles size={18} aria-hidden="true" />
+            Shiny Archive
           </span>
 
           <div className="flex gap-2">
-            <button
-              onClick={() => setPage("dex")}
-              className={`rounded-lg px-4 py-2 text-sm ${
-                page === "dex"
-                  ? "bg-gold text-obsidian"
-                  : "text-muted hover:bg-surface hover:text-white"
-              }`}
+            <NavLink
+              to="/dex"
+              className={({ isActive }) =>
+                `rounded-lg px-4 py-2 font-body text-xs font-medium ${
+                  isActive
+                    ? "bg-gold text-obsidian"
+                    : "text-muted hover:bg-surface hover:text-white"
+                }`
+              }
             >
               Pokédex
-            </button>
+            </NavLink>
 
-            <button
-              onClick={() => setPage("hunts")}
-              className={`rounded-lg px-4 py-2 text-sm ${
-                page === "hunts"
-                  ? "bg-gold text-obsidian"
-                  : "text-muted hover:bg-surface hover:text-white"
-              }`}
+            <NavLink
+              to="/hunts"
+              className={({ isActive }) =>
+                `rounded-lg px-4 py-2 font-body text-xs font-medium ${
+                  isActive
+                    ? "bg-gold text-obsidian"
+                    : "text-muted hover:bg-surface hover:text-white"
+                }`
+              }
             >
               Hunt Board
-            </button>
+            </NavLink>
           </div>
         </div>
       </nav>
 
-      {page === "dex" ? (
-        <NationalDexPage />
-      ) : (
-        <HuntBoardPage />
-      )}
+      <Routes>
+        <Route path="/" element={<Navigate to="/dex" replace />} />
+        <Route path="/dex" element={<NationalDexPage />} />
+        <Route path="/hunts" element={<HuntBoardPage />} />
+        <Route path="*" element={<Navigate to="/dex" replace />} />
+      </Routes>
     </div>
   );
 }

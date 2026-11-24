@@ -12,6 +12,8 @@ import {
   type CollectionSummary,
 } from "../services/collection";
 import { quickAddPokemon } from "../services/collection";
+import { createHunt } from "../services/hunt";
+import Button from "../components/Button";
 
 const generationColors = [
   "text-sky-400",
@@ -113,27 +115,34 @@ export default function NationalDexPage() {
     setRefreshKey((current) => current + 1);
   }
 
+  async function handleQuickHunt(dexEntryId: number) {
+    await createHunt({
+      dexEntryId,
+      status: "ACTIVE",
+    });
+  }
+
 
   return (
     <main className="min-h-screen bg-obsidian px-4 py-10 text-white sm:px-8 lg:px-12">
       <div className="mx-auto max-w-7xl">
         <header className="mb-8">
-          <p className="mb-2 text-xs font-semibold tracking-[0.2em] text-gold uppercase">
+          <p className="mb-2 font-mono text-micro uppercase tracking-widest text-gold">
             Shiny Archive / Collection
           </p>
-          <h1 className="font-display text-4xl font-bold tracking-tight sm:text-5xl">
+          <h1 className="font-display text-2xl font-semibold tracking-tight">
             National Pokédex
           </h1>
-          <p className="mt-3 text-muted">
+          <p className="mt-3 font-body text-sm text-muted">
             Explore your living shiny collection.
           </p>
         </header>
 
         {summary?.generations?.length ? (
           <details open className="mb-8 rounded-xl border border-border bg-surface">
-            <summary className="cursor-pointer px-5 py-4 font-display text-lg font-semibold marker:text-gold">
+            <summary className="cursor-pointer px-5 py-4 font-display text-xl font-semibold marker:text-gold">
               Generation progress
-              <span className="ml-2 font-sans text-sm font-normal text-muted">
+              <span className="ml-2 font-body text-sm text-muted">
                 Distinct Pokémon species collected
               </span>
             </summary>
@@ -182,14 +191,14 @@ export default function NationalDexPage() {
                           className={`${color} transition-[stroke-dashoffset]`}
                         />
                       </svg>
-                      <span className="absolute inset-0 flex items-center justify-center text-sm font-semibold text-white">
+                      <span className="absolute inset-0 flex items-center justify-center font-body text-xs font-medium text-white">
                         {generation.obtainedPercent}%
                       </span>
                     </div>
-                    <p className="text-sm font-medium">
+                    <p className="font-body text-sm">
                       Generation {generation.generation}
                     </p>
-                    <p className="text-xs text-muted">
+                    <p className="font-mono text-micro uppercase tracking-widest text-muted">
                       {generation.obtained} / {generation.total} species
                     </p>
                   </div>
@@ -211,8 +220,8 @@ export default function NationalDexPage() {
                 key={label}
                 className="rounded-xl border border-border bg-surface p-5"
               >
-                <p className="text-xs text-muted">{label}</p>
-                <p className="mt-2 font-display text-3xl font-bold">
+                <p className="font-mono text-micro uppercase tracking-widest text-muted">{label}</p>
+                <p className="mt-2 font-display text-3xl tabular-nums">
                   {value}
                 </p>
               </div>
@@ -237,10 +246,10 @@ export default function NationalDexPage() {
         />
 
         <div className="mb-5 flex items-center justify-between">
-          <p className="text-sm text-muted">
+          <p className="font-body text-sm text-muted">
             {total} Pokémon entries
           </p>
-          <span className="text-xs text-gold">
+          <span className="font-mono text-micro uppercase tracking-widest text-gold">
             National Dex
           </span>
         </div>
@@ -266,6 +275,7 @@ export default function NationalDexPage() {
                   pokemon={entry}
                   onClick={setSelectedId}
                   onQuickAdd={handleQuickAdd}
+                  onQuickHunt={handleQuickHunt}
                 />
               ))}
             </div>
@@ -277,7 +287,8 @@ export default function NationalDexPage() {
             )}
 
             <div className="mt-10 flex items-center justify-center gap-6">
-              <button
+              <Button
+                variant="outline"
                 disabled={page <= 1}
                 onClick={() =>
                   setFilters((current) => ({
@@ -285,16 +296,17 @@ export default function NationalDexPage() {
                     page: page - 1,
                   }))
                 }
-                className="rounded-lg border border-border bg-surface px-4 py-2 text-sm hover:border-gold disabled:cursor-not-allowed disabled:opacity-40"
+                className="rounded-lg border border-border bg-surface px-4 py-2 font-body text-xs font-medium text-white hover:border-gold disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Previous
-              </button>
+              </Button>
 
-              <span className="text-sm text-muted">
+              <span className="font-body text-sm text-muted">
                 Page {page} of {totalPages}
               </span>
 
-              <button
+              <Button
+                variant="outline"
                 disabled={page >= totalPages}
                 onClick={() =>
                   setFilters((current) => ({
@@ -302,10 +314,10 @@ export default function NationalDexPage() {
                     page: page + 1,
                   }))
                 }
-                className="rounded-lg border border-border bg-surface px-4 py-2 text-sm hover:border-gold disabled:cursor-not-allowed disabled:opacity-40"
+                className="rounded-lg border border-border bg-surface px-4 py-2 font-body text-xs font-medium text-white hover:border-gold disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Next
-              </button>
+              </Button>
             </div>
           </>
         )}

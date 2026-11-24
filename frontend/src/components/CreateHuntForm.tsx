@@ -4,6 +4,7 @@ import { getPokemon } from "../services/pokemon";
 import { createHunt } from "../services/hunt";
 import type { DexEntry } from "../types/pokemon";
 import type { HuntStatus } from "../types/hunt";
+import Button from "./Button";
 
 interface Props {
   onCreated: () => Promise<void>;
@@ -12,8 +13,9 @@ interface Props {
 
 const fieldClass =
   "w-full rounded-lg border border-border bg-obsidian " +
-  "px-3 py-2.5 text-sm outline-none focus:border-gold";
+  "px-3 py-2.5 font-body text-xs font-medium outline-none focus:border-gold";
 
+// Searches for a Pokémon and creates a hunt with its initial settings.
 export default function CreateHuntForm({
   onCreated,
   onClose,
@@ -97,38 +99,40 @@ export default function CreateHuntForm({
         className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-border bg-surface p-6"
       >
         <div className="mb-6 flex items-center justify-between">
-          <h2 className="font-display text-2xl font-bold">
+          <h2 className="font-display text-xl font-semibold">
             New shiny hunt
           </h2>
-          <button
+          <Button
+            variant="ghost"
             type="button"
             onClick={onClose}
-            className="text-sm text-muted hover:text-white"
+            className="min-h-0 border-0 bg-transparent p-0 font-body text-xs font-medium text-muted hover:bg-transparent hover:text-white"
           >
             Close ✕
-          </button>
+          </Button>
         </div>
 
         <form onSubmit={submit} className="space-y-5">
           <div>
-            <label className="mb-2 block text-sm text-muted">
+            <label className="mb-2 block font-body text-xs font-medium text-muted">
               Pokémon
             </label>
 
             {selected ? (
               <div className="flex items-center justify-between rounded-lg border border-gold bg-obsidian p-3">
                 <span>{selected.displayName}</span>
-                <button
+                <Button
+                  variant="ghost"
                   type="button"
                   onClick={() => {
                     setSelected(null);
                     setSearch("");
                     setResults([]);
                   }}
-                  className="text-xs text-gold"
+                  className="min-h-0 border-0 bg-transparent p-0 font-body text-xs font-medium text-gold hover:bg-transparent"
                 >
                   Change
-                </button>
+                </Button>
               </div>
             ) : (
               <>
@@ -145,14 +149,15 @@ export default function CreateHuntForm({
                 {search.trim() && (
                   <div className="mt-2 max-h-48 overflow-y-auto rounded-lg border border-border bg-obsidian">
                     {results.map((pokemon) => (
-                      <button
+                      <Button
                         key={pokemon.id}
                         type="button"
+                        variant="ghost"
                         onClick={() => {
                           setSelected(pokemon);
                           setResults([]);
                         }}
-                        className="flex w-full items-center gap-3 border-b border-border p-2 text-left text-sm hover:bg-surface-hover"
+                        className="flex w-full items-center gap-3 border-b border-border p-2 text-left font-body text-xs font-medium text-white hover:bg-surface-hover"
                       >
                         <img
                           src={pokemon.spriteShiny ?? pokemon.spriteDefault ?? ""}
@@ -163,10 +168,10 @@ export default function CreateHuntForm({
                           #{pokemon.species.nationalDexNumber}{" "}
                           {pokemon.displayName}
                         </span>
-                      </button>
+                      </Button>
                     ))}
                     {results.length === 0 && (
-                      <p className="p-3 text-xs text-muted">
+                      <p className="p-3 font-body text-xs text-muted">
                         No results yet
                       </p>
                     )}
@@ -177,7 +182,7 @@ export default function CreateHuntForm({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm text-muted">
+            <label className="mb-2 block font-body text-xs font-medium text-muted">
               Game
             </label>
             <input
@@ -189,7 +194,7 @@ export default function CreateHuntForm({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm text-muted">
+            <label className="mb-2 block font-body text-xs font-medium text-muted">
               Hunting method
             </label>
             <input
@@ -201,7 +206,7 @@ export default function CreateHuntForm({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm text-muted">
+            <label className="mb-2 block font-body text-xs font-medium text-muted">
               Initial status
             </label>
             <select
@@ -216,7 +221,7 @@ export default function CreateHuntForm({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm text-muted">
+            <label className="mb-2 block font-body text-xs font-medium text-muted">
               Notes
             </label>
             <textarea
@@ -229,18 +234,19 @@ export default function CreateHuntForm({
           </div>
 
           {error && (
-            <p role="alert" className="text-sm text-red-400">
+            <p role="alert" className="font-body text-sm text-red-400">
               {error}
             </p>
           )}
 
-          <button
+          <Button
+            variant="accent"
             type="submit"
             disabled={saving || !selected}
-            className="w-full rounded-lg bg-gold px-4 py-3 font-semibold text-obsidian disabled:opacity-40"
+            className="w-full rounded-lg bg-gold px-4 py-3 font-body text-xs font-medium text-obsidian disabled:opacity-40"
           >
             {saving ? "Creating..." : "Create hunt"}
-          </button>
+          </Button>
         </form>
       </div>
     </div>

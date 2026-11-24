@@ -1,5 +1,6 @@
 
 import type { PokemonFilters } from "../services/pokemon";
+import Button from "./Button";
 
 type CollectionStatus = NonNullable<
   PokemonFilters["collection"]
@@ -21,13 +22,14 @@ const options: {
   { label: "Not in HOME", value: "not-in-home" },
 ];
 
+// Filters the Pokédex by collection ownership and HOME status.
 export default function CollectionFilter({
   value,
   onChange,
 }: CollectionFilterProps) {
   return (
     <div className="mb-6">
-      <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">
+      <p className="mb-3 font-mono text-micro uppercase tracking-widest text-muted">
         Collection status
       </p>
 
@@ -36,14 +38,15 @@ export default function CollectionFilter({
           const active = value === option.value;
 
           return (
-            <button
+            <Button
               key={option.value}
               type="button"
+              variant={active ? "accent" : "outline"}
               onClick={() => onChange(option.value)}
               aria-pressed={active}
               className={`
                 rounded-lg border px-4 py-2.5
-                text-sm font-medium
+                font-body text-xs font-medium
                 transition-all duration-200
                 ${
                   active
@@ -53,7 +56,7 @@ export default function CollectionFilter({
               `}
             >
               {option.label}
-            </button>
+            </Button>
           );
         })}
       </div>

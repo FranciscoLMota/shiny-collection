@@ -11,14 +11,97 @@
 
   --color-success: #69a884;
   --color-muted: #999999;
+  --color-ink: var(--bios-ink);
+  --color-canvas: var(--bios-canvas);
+  --color-accent: var(--bios-accent);
+  --color-accent-ink: var(--bios-accent-ink);
+  --color-outline: var(--bios-outline);
+  --color-danger: var(--bios-danger);
 
   --font-display: "Urbanist", sans-serif;
-  --font-sans: "Inter", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --text-micro: 0.625rem;
 }
+
+:root {
+  color-scheme: light;
+
+  --bios-canvas: #f5f2e7;
+  --bios-surface: #eeeee0;
+  --bios-elevated: #faf8f0;
+
+  --bios-ink: #243b30;
+  --bios-muted: #626e60;
+  --bios-outline: #a6ae95;
+
+  --bios-accent: #c9de78;
+  --bios-accent-ink: #243b30;
+
+  --bios-solar: #ffb84d;
+  --bios-sky: #83bcd3;
+
+  --bios-success: #527a46;
+  --bios-danger: #a63e38;
+}
+
+
+/* Lunar (Dark */
+
+[data-theme="lunar"] {
+  color-scheme: dark;
+
+  --bios-canvas: #111e20;
+  --bios-surface: #233637;
+  --bios-elevated: #2c4142;
+
+  --bios-ink: #eae9d9;
+  --bios-muted: #a9b8af;
+  --bios-outline: #526763;
+
+  --bios-accent: #c4f3a1;
+  --bios-accent-ink: #172b20;
+
+  --bios-solar: #b9b5e8;
+  --bios-sky: #83bcd3;
+
+  --bios-success: #a5d98b;
+  --bios-danger: #ff9389;
+}
+
+/* ========================================
+   04 / GEOMETRY
+   ======================================== */
+
+@utility shape-angular {
+  border-radius: 0;
+}
+
+@utility shape-organic {
+  border-radius: 2px 24px 2px 2px;
+}
+
+@utility shape-panel {
+  border-radius: 2px 32px 2px 2px;
+}
+
+@utility shape-chamfer {
+  clip-path: polygon(
+    0 0,
+    calc(100% - 16px) 0,
+    100% 16px,
+    100% 100%,
+    0 100%
+  );
+}
+
+@utility shape-orbital {
+  border-radius: 50%;
+}
+
 
 @layer base {
   body {
-    @apply m-0 bg-obsidian font-sans text-white antialiased;
+    @apply m-0 bg-obsidian font-body text-sm text-white antialiased;
   }
 
   button {
@@ -202,5 +285,80 @@
   .pokemon-holo,
   .pokemon-holo-glare {
     transition: none;
+  }
+}
+
+/* ========================================
+   05 / COMPONENT SYSTEM
+   ======================================== */
+
+@layer components {
+  .technical-label {
+    @apply font-mono text-micro uppercase
+           tracking-widest text-muted;
+  }
+
+  .panel {
+    @apply relative bg-surface
+           border border-outline;
+  }
+
+  .specimen-card {
+    @apply relative overflow-hidden
+           bg-surface border border-outline
+           shape-organic p-3;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center
+           gap-2 min-h-9 px-3 py-2
+           font-body text-xs font-medium
+           border border-transparent
+           transition-colors duration-150
+           disabled:opacity-40
+           disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply bg-ink text-canvas border-ink
+           hover:bg-accent hover:text-accent-ink;
+  }
+
+  .btn-accent {
+    @apply bg-accent text-accent-ink border-outline
+           hover:border-ink;
+  }
+
+  .btn-outline {
+    @apply bg-transparent border-ink text-ink
+           hover:bg-ink hover:text-canvas;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent text-ink
+           hover:bg-surface;
+  }
+
+  .btn-danger {
+    @apply bg-transparent border-danger text-danger
+           hover:bg-danger hover:text-white;
+  }
+
+  .field {
+    @apply w-full min-h-9 px-3 py-2
+           bg-canvas border border-outline
+           text-sm text-ink
+           placeholder:text-muted
+           focus:border-ink;
+  }
+
+  .section-divider {
+    @apply border-t border-outline;
+  }
+
+  .status {
+    @apply inline-flex items-center gap-1.5
+           font-mono text-micro uppercase
+           tracking-wide;
   }
 }
